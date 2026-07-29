@@ -493,8 +493,8 @@ with tab_dbscan:
     eps = dc2.slider(
         "eps (Neighborhood Radius)",
         min_value=0.1,
-        max_value=3.0,
-        value=1.2,
+        max_value=5.0,
+        value=1.0,
         step=0.05,
         key="db_eps"
     )
