@@ -568,7 +568,7 @@ with tab_dbscan:
             f"DBSCAN Error:\n{e}"
         )
 
-    st.stop()
+        st.stop()
 
 
     # Debug (暂时放这里)
