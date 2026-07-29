@@ -562,6 +562,9 @@ with tab_dbscan:
             X_scaled
         )
 
+    st.write("Labels:")
+    st.write(np.unique(dbscan_labels))
+
     except Exception as e:
 
         st.error(
