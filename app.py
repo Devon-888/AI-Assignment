@@ -183,15 +183,24 @@ X_raw = X_raw.fillna(
 
 # Handle missing values
 
+# Convert non-numeric columns into numbers
+
 for col in X_raw.columns:
-    if df_proc[col].dtype == object or pd.api.types.is_string_dtype(df_proc[col]):
-        X_raw[col] = X_raw[col].fillna(
-            X_raw[col].mode()[0]
+
+    if not pd.api.types.is_numeric_dtype(X_raw[col]):
+
+        encoder = LabelEncoder()
+
+        X_raw[col] = encoder.fit_transform(
+            X_raw[col].astype(str)
         )
-    else:
-    X_raw[col] = X_raw[col].fillna(
-        X_raw[col].mean()
-    )
+
+
+# Handle missing values
+
+X_raw = X_raw.fillna(
+    X_raw.mean()
+)
 
 
 
