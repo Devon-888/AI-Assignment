@@ -491,13 +491,14 @@ with tab_dbscan:
     )
 
 
-    # -------------------------------
-    # k-distance graph
-    # -------------------------------
+    # --------------------------------
+    # k-distance Graph
+    # --------------------------------
 
     with st.expander(
         "View k-distance Graph"
     ):
+
 
         neighbors = NearestNeighbors(
             n_neighbors=min_samples
@@ -545,135 +546,244 @@ with tab_dbscan:
 
         plt.close(fig)
 
-# -------------------------------
-# Evaluation
-# -------------------------------
-
-if n_clusters_db >= 2:
 
 
-    mask = (
-        dbscan_labels != -1
-    )
+    # --------------------------------
+    # DBSCAN Auto Parameter Search
+    # --------------------------------
+
+    try:
+
+        best_eps = None
+        best_clusters = 0
+        best_labels = None
 
 
-    dbscan_silhouette = silhouette_score(
-        X_scaled[mask],
-        dbscan_labels[mask]
-    )
+        for test_eps in np.arange(
+            0.2,
+            3.0,
+            0.05
+        ):
 
 
-    dbscan_db_score = davies_bouldin_score(
-        X_scaled[mask],
-        dbscan_labels[mask]
-    )
+            temp_model = DBSCAN(
+                eps=test_eps,
+                min_samples=min_samples
+            )
 
 
-    c3.metric(
-        "Silhouette Score",
-        round(
-            dbscan_silhouette,
-            3
-        )
-    )
+            temp_labels = temp_model.fit_predict(
+                X_scaled
+            )
 
 
-    st.caption(
-        f"Davies-Bouldin Index: {dbscan_db_score:.3f}"
-    )
+            clusters = len(
+                set(temp_labels)
+            ) - (
+                1 if -1 in temp_labels else 0
+            )
 
 
-else:
+            if clusters > best_clusters:
+
+                best_clusters = clusters
+                best_eps = test_eps
+                best_labels = temp_labels
 
 
-    dbscan_silhouette = np.nan
 
-    dbscan_db_score = np.nan
-
-
-    c3.metric(
-        "Silhouette Score",
-        "N/A"
-    )
+        if best_labels is None:
 
 
-    st.warning(
-        "DBSCAN found insufficient clusters. Try changing eps or min_samples."
-    )
-    
-# -------------------------------
-# DBSCAN Model (Auto Parameter Search)
-# -------------------------------
-
-try:
-
-    best_eps = None
-    best_clusters = 0
-    best_labels = None
+            dbscan_labels = DBSCAN(
+                eps=eps,
+                min_samples=min_samples
+            ).fit_predict(
+                X_scaled
+            )
 
 
-    for test_eps in np.arange(0.2, 3.0, 0.05):
-
-        temp_model = DBSCAN(
-            eps=test_eps,
-            min_samples=min_samples
-        )
+        else:
 
 
-        temp_labels = temp_model.fit_predict(
-            X_scaled
+            dbscan_labels = best_labels
+
+
+            st.info(
+                f"Best DBSCAN eps: {best_eps:.2f}, "
+                f"Clusters found: {best_clusters}"
+            )
+
+
+
+    except Exception as e:
+
+
+        st.error(
+            f"DBSCAN Error:\n{e}"
         )
 
+        st.stop()
 
-        clusters = len(
-            set(temp_labels)
-        ) - (
-            1 if -1 in temp_labels else 0
+
+
+    # --------------------------------
+    # Calculate Cluster Number
+    # --------------------------------
+
+    unique_labels = set(
+        dbscan_labels
+    )
+
+
+    n_clusters_db = len(
+        unique_labels
+    ) - (
+        1 if -1 in unique_labels else 0
+    )
+
+
+
+    # --------------------------------
+    # Evaluation
+    # --------------------------------
+
+    if n_clusters_db >= 2:
+
+
+        mask = (
+            dbscan_labels != -1
         )
 
 
-        # 找最多 cluster 的 eps
-        if clusters > best_clusters:
-
-            best_clusters = clusters
-            best_eps = test_eps
-            best_labels = temp_labels
-
-
-
-    if best_eps is None or best_clusters < 2:
-
-        st.warning(
-            "DBSCAN cannot find meaningful clusters. Try changing min_samples."
+        dbscan_silhouette = silhouette_score(
+            X_scaled[mask],
+            dbscan_labels[mask]
         )
 
-        dbscan_labels = DBSCAN(
-            eps=eps,
-            min_samples=min_samples
-        ).fit_predict(
-            X_scaled
+
+        dbscan_db_score = davies_bouldin_score(
+            X_scaled[mask],
+            dbscan_labels[mask]
+        )
+
+
+        c1, c2 = st.columns(2)
+
+
+        c1.metric(
+            "Silhouette Score",
+            round(
+                dbscan_silhouette,
+                3
+            )
+        )
+
+
+        c2.metric(
+            "Davies-Bouldin Index",
+            round(
+                dbscan_db_score,
+                3
+            )
         )
 
 
     else:
 
-        st.info(
-            f"Best DBSCAN eps: {best_eps:.2f}, "
-            f"Clusters found: {best_clusters}"
+
+        dbscan_silhouette = np.nan
+
+        dbscan_db_score = np.nan
+
+
+
+    # --------------------------------
+    # Visualization
+    # --------------------------------
+
+
+    p1, p2 = st.columns(2)
+
+
+
+    with p1:
+
+
+        fig, ax = plt.subplots(
+            figsize=(6,5)
         )
 
 
-        dbscan_labels = best_labels
+        sc = ax.scatter(
+            df[scatter_x],
+            df[scatter_y],
+            c=dbscan_labels,
+            cmap="tab10",
+            s=45
+        )
+
+
+        ax.set_title(
+            "DBSCAN Clustering"
+        )
+
+
+        ax.set_xlabel(
+            scatter_x
+        )
+
+
+        ax.set_ylabel(
+            scatter_y
+        )
+
+
+        plt.colorbar(
+            sc,
+            ax=ax,
+            label="Cluster (-1 = Noise)"
+        )
+
+
+        st.pyplot(fig)
+
+        plt.close(fig)
 
 
 
-except Exception as e:
+    with p2:
 
-    st.error(
-        f"DBSCAN Error:\n{e}"
-    )
 
-    st.stop()
+        fig, ax = plt.subplots(
+            figsize=(6,5)
+        )
+
+
+        sc = ax.scatter(
+            X_pca[:,0],
+            X_pca[:,1],
+            c=dbscan_labels,
+            cmap="tab10",
+            s=45
+        )
+
+
+        ax.set_title(
+            "DBSCAN - PCA Projection"
+        )
+
+
+        plt.colorbar(
+            sc,
+            ax=ax,
+            label="Cluster"
+        )
+
+
+        st.pyplot(fig)
+
+        plt.close(fig)
 
 
 
