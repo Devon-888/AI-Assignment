@@ -668,9 +668,19 @@ with tab_dbscan:
         )
 
 
-        c1 = st.columns(1)
+        c1, c2 = st.columns(2)
+
 
         c1.metric(
+            "Silhouette Score",
+            round(
+                dbscan_silhouette,
+                3
+            )
+        )
+
+
+        c2.metric(
             "Davies-Bouldin Index",
             round(
                 dbscan_db_score,
