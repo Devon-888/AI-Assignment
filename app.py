@@ -484,23 +484,22 @@ with tab_dbscan:
 
 
     min_samples = dc1.slider(
-        "min_samples",
-        min_value=2,
-        max_value=20,
-        value=5,
-        key="db_min_samples"
-    )
+    "min_samples",
+    min_value=2,
+    max_value=20,
+    value=4,
+    key="db_min_samples"
+)
 
 
-
-    eps = dc2.slider(
-        "eps (Neighborhood Radius)",
-        min_value=0.1,
-        max_value=3.0,
-        value=0.8,
-        step=0.05,
-        key="db_eps"
-    )
+eps = dc2.slider(
+    "eps (Neighborhood Radius)",
+    min_value=0.1,
+    max_value=3.0,
+    value=1.2,
+    step=0.05,
+    key="db_eps"
+)
 
 
 
