@@ -609,13 +609,13 @@ with tab_dbscan:
     dbscan_labels = best_labels
 
 
-        except Exception as e:
+    except Exception as e:
 
-            st.error(
-                f"DBSCAN Error:\n{e}"
-            )
+        st.error(
+            f"DBSCAN Error:\n{e}"
+        )
 
-            st.stop()
+        st.stop()
 
 
 
