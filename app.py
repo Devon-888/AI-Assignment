@@ -558,21 +558,21 @@ with tab_dbscan:
 
     try:
 
-        dbscan_labels = dbscan.fit_predict(
-            X_scaled
-        )
+    dbscan_labels = dbscan.fit_predict(
+        X_scaled
+    )
 
     st.write("Labels:")
     st.write(np.unique(dbscan_labels))
 
+
     except Exception as e:
 
-        st.error(
-            f"DBSCAN Error:\n{e}"
-        )
+    st.error(
+        f"DBSCAN Error:\n{e}"
+    )
 
-        st.stop()
-
+    st.stop()
 
 
     n_clusters_db = len(
