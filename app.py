@@ -485,7 +485,7 @@ with tab_dbscan:
         "min_samples",
         min_value=2,
         max_value=20,
-        value=3,
+        value=4,
         key="db_min_samples"
     )
 
@@ -494,10 +494,11 @@ with tab_dbscan:
         "eps (Neighborhood Radius)",
         min_value=0.1,
         max_value=5.0,
-        value=1.0,
+        value=1.5,
         step=0.05,
         key="db_eps"
     )
+
 
 
     with st.expander(
@@ -550,17 +551,24 @@ with tab_dbscan:
 
         plt.close(fig)
 
+
+
+    # -------------------------------
+    # DBSCAN Model
+    # -------------------------------
+
     dbscan = DBSCAN(
-        eps=2.0,
-        min_samples=4
+        eps=eps,
+        min_samples=min_samples
     )
 
 
     try:
 
         dbscan_labels = dbscan.fit_predict(
-        X_scaled
-    )
+            X_scaled
+        )
+
 
     except Exception as e:
 
@@ -571,9 +579,16 @@ with tab_dbscan:
         st.stop()
 
 
-    # Debug (暂时放这里)
-    st.write("Labels:")
-    st.write(np.unique(dbscan_labels))
+
+    # Debug (测试完成后可以删除)
+    st.write(
+        "Labels:"
+    )
+
+    st.write(
+        np.unique(dbscan_labels)
+    )
+
 
 
     n_clusters_db = len(
@@ -592,6 +607,7 @@ with tab_dbscan:
     m1, m2, m3 = st.columns(3)
 
 
+
     m1.metric(
         "Number of Clusters",
         n_clusters_db
@@ -607,6 +623,7 @@ with tab_dbscan:
 
 
     if n_clusters_db >= 2:
+
 
         mask = dbscan_labels != -1
 
@@ -634,17 +651,24 @@ with tab_dbscan:
         )
 
 
+
     else:
 
-        dbscan_silhouette = np.nan
+
+        dbscan_silhouette = 0
 
         dbscan_db_score = np.nan
 
 
         st.warning(
-            "Not enough clusters to calculate evaluation scores. Please adjust parameters."
+            "DBSCAN found only one cluster. Adjust eps or min_samples."
         )
 
+
+
+    # -------------------------------
+    # Visualization
+    # -------------------------------
 
 
     p1, p2 = st.columns(2)
@@ -653,8 +677,9 @@ with tab_dbscan:
 
     with p1:
 
+
         fig, ax = plt.subplots(
-            figsize=(6, 5)
+            figsize=(6,5)
         )
 
 
@@ -695,16 +720,18 @@ with tab_dbscan:
 
 
 
+
     with p2:
 
+
         fig, ax = plt.subplots(
-            figsize=(6, 5)
+            figsize=(6,5)
         )
 
 
         sc = ax.scatter(
-            X_pca[:, 0],
-            X_pca[:, 1],
+            X_pca[:,0],
+            X_pca[:,1],
             c=dbscan_labels,
             cmap="tab10",
             s=45
