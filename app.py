@@ -151,10 +151,11 @@ if len(feature_cols_selected) < 2:
     st.stop()
 
 
-
 # -----------------------------
 # Data Preprocessing
 # -----------------------------
+st.write(df.head())
+st.write(df.dtypes)
 
 df_proc = df.copy()
 
@@ -173,7 +174,7 @@ for col in X_raw.columns:
         )
 
 
-# Convert all columns to numeric
+# Convert numeric
 for col in X_raw.columns:
 
     X_raw[col] = pd.to_numeric(
@@ -182,38 +183,33 @@ for col in X_raw.columns:
     )
 
 
-# Replace infinite values
+# Replace infinity
 X_raw = X_raw.replace(
     [np.inf, -np.inf],
     np.nan
 )
 
 
+# Check missing BEFORE filling
+st.write("Missing before fill:")
+st.write(X_raw.isna().sum())
+
+
 # Fill missing values
-X_raw = X_raw.fillna(
-    X_raw.mean()
-)
+for col in X_raw.columns:
+
+    if X_raw[col].isna().sum() > 0:
+
+        X_raw[col] = X_raw[col].fillna(
+            X_raw[col].mean()
+        )
 
 
-# Remove remaining missing rows
-X_raw = X_raw.dropna()
-
-df = df.loc[X_raw.index]
-
-
-# Reset index
-X_raw = X_raw.reset_index(drop=True)
-
-
-# Debug
+# Final check
 st.write("After preprocessing:")
+st.write(X_raw.shape)
+
 st.dataframe(X_raw.head())
-
-st.write("Data types:")
-st.write(X_raw.dtypes)
-
-st.write("Missing:")
-st.write(X_raw.isnull().sum())
 
 
 # ----------------------------------------------------------------------------
