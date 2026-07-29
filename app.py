@@ -178,14 +178,16 @@ for col in X_raw.columns:
         )
 
 for col in X_raw.columns:
-    X_raw[col] = pd.to_numeric(
-        X_raw[col],
-        errors="coerce"
-    )
+    X_raw[col] = pd.to_numeric(X_raw[col], errors="coerce")
 
-X_raw = X_raw.fillna(
-    X_raw.mean(numeric_only=True)
-)
+# 查看哪一列还有 NaN
+st.write(X_raw.isna().sum())
+
+# 用每一列的平均值填补
+X_raw = X_raw.fillna(X_raw.mean())
+
+# 如果还有 NaN，就删除这些行
+X_raw = X_raw.dropna()
 
 
 # ----------------------------------------------------------------------------
