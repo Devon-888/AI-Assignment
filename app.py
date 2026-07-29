@@ -152,50 +152,80 @@ if len(feature_cols_selected) < 2:
 
 
 
-# ----------------------------------------------------------------------------
+# -----------------------------
 # Data Preprocessing
-# ----------------------------------------------------------------------------
+# -----------------------------
 
 df_proc = df.copy()
 
-for col in feature_cols_selected:
-
-    if df_proc[col].dtype == object:
-
-        encoder = LabelEncoder()
-
-        df_proc[col] = encoder.fit_transform(
-            df_proc[col].astype(str)
-        )
-
 X_raw = df_proc[feature_cols_selected].copy()
 
+
+# Convert categorical columns
 for col in X_raw.columns:
+
     if X_raw[col].dtype == "object":
+
         encoder = LabelEncoder()
+
         X_raw[col] = encoder.fit_transform(
             X_raw[col].astype(str)
         )
 
+
+# Convert all columns to numeric
 for col in X_raw.columns:
-    X_raw[col] = pd.to_numeric(X_raw[col], errors="coerce")
 
-# 查看哪一列还有 NaN
-st.write(X_raw.isna().sum())
+    X_raw[col] = pd.to_numeric(
+        X_raw[col],
+        errors="coerce"
+    )
 
-# 用每一列的平均值填补
-X_raw = X_raw.fillna(X_raw.mean())
 
-# 如果还有 NaN，就删除这些行
+# Replace infinite values
+X_raw = X_raw.replace(
+    [np.inf, -np.inf],
+    np.nan
+)
+
+
+# Fill missing values
+X_raw = X_raw.fillna(
+    X_raw.mean()
+)
+
+
+# Remove remaining missing rows
 X_raw = X_raw.dropna()
+
+df = df.loc[X_raw.index]
+
+
+# Reset index
+X_raw = X_raw.reset_index(drop=True)
+
+
+# Debug
+st.write("After preprocessing:")
+st.dataframe(X_raw.head())
+
+st.write("Data types:")
+st.write(X_raw.dtypes)
+
+st.write("Missing:")
+st.write(X_raw.isnull().sum())
 
 
 # ----------------------------------------------------------------------------
 # Feature Scaling
 # ----------------------------------------------------------------------------
-
 scaler = StandardScaler()
 
+X_scaled = scaler.fit_transform(
+    X_raw
+)
+
+st.write(X_scaled.shape)
 st.write("X_raw")
 st.dataframe(X_raw.head())
 
@@ -217,23 +247,20 @@ X_scaled = scaler.fit_transform(
 
 try:
 
-    scaler = StandardScaler()
-
-    X_scaled = scaler.fit_transform(X_raw)
-
     pca = PCA(
         n_components=2,
         random_state=42
     )
 
-    X_pca = pca.fit_transform(X_scaled)
+    X_pca = pca.fit_transform(
+        X_scaled
+    )
 
 except Exception as e:
 
     st.error(f"PCA Error:\n{e}")
 
     st.stop()
-
 
 # ----------------------------------------------------------------------------
 # Scatter Plot Selection
