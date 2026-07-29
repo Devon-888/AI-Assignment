@@ -549,12 +549,20 @@ with tab_dbscan:
 # Evaluation
 # -------------------------------
 
+unique_labels = set(dbscan_labels)
+
+n_clusters_db = len(
+    unique_labels
+) - (
+    1 if -1 in unique_labels else 0
+)
+
+
 if n_clusters_db >= 2:
 
-
     mask = (
-         dbscan_labels != -1
-     )
+        dbscan_labels != -1
+    )
 
 
     dbscan_silhouette = silhouette_score(
@@ -569,7 +577,10 @@ if n_clusters_db >= 2:
     )
 
 
-    c3.metric(
+    c1, c2 = st.columns(2)
+
+
+    c1.metric(
         "Silhouette Score",
         round(
             dbscan_silhouette,
@@ -578,12 +589,20 @@ if n_clusters_db >= 2:
     )
 
 
-    st.caption(
-        f"Davies-Bouldin Index: {dbscan_db_score:.3f}"
+    c2.metric(
+        "Davies-Bouldin Index",
+        round(
+            dbscan_db_score,
+            3
+        )
     )
 
 
 else:
+
+    dbscan_silhouette = np.nan
+
+    dbscan_db_score = np.nan
 
 
     dbscan_silhouette = np.nan
@@ -600,6 +619,7 @@ else:
     st.warning(
         "DBSCAN found insufficient clusters. Try changing eps or min_samples."
     )
+    
 # -------------------------------
 # DBSCAN Model (Auto Parameter Search)
 # -------------------------------
