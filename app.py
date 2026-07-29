@@ -168,7 +168,20 @@ for col in feature_cols_selected:
             df_proc[col].astype(str)
         )
 
-X_raw = df_proc[feature_cols_selected]
+X_raw = df_proc[feature_cols_selected].copy()
+
+for col in X_raw.columns:
+    if X_raw[col].dtype == "object":
+        encoder = LabelEncoder()
+        X_raw[col] = encoder.fit_transform(
+            X_raw[col].astype(str)
+        )
+
+for col in X_raw.columns:
+    X_raw[col] = pd.to_numeric(
+        X_raw[col],
+        errors="coerce"
+    )
 
 X_raw = X_raw.fillna(
     X_raw.mean(numeric_only=True)
@@ -181,6 +194,14 @@ X_raw = X_raw.fillna(
 
 scaler = StandardScaler()
 
+st.write("X_raw")
+st.dataframe(X_raw.head())
+
+st.write("Data Types")
+st.write(X_raw.dtypes)
+
+st.write("Missing Values")
+st.write(X_raw.isnull().sum())
 
 X_scaled = scaler.fit_transform(
     X_raw
