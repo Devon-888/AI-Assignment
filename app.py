@@ -328,18 +328,33 @@ scatter_y = col2.selectbox(
 
 
 
+
+# ----------------------------------------------------------------------------
+# Initialize Results
+# ----------------------------------------------------------------------------
+
+dbscan_silhouette = np.nan
+dbscan_db_score = np.nan
+
+agg_silhouette = np.nan
+agg_db = np.nan
+
+spec_silhouette = np.nan
+spec_db = np.nan
+
+
 # ----------------------------------------------------------------------------
 # Tabs
 # ----------------------------------------------------------------------------
 
 tab_eda, tab_dbscan, tab_agg, tab_spec, tab_compare = st.tabs(
-    [
-        "📊 Data Exploration",
-        "🔵 DBSCAN",
-        "🌳 Agglomerative Clustering",
-        "🕸️ Spectral Clustering",
-        "⚖️ Method Comparison"
-    ]
+[
+"📊 Data Exploration",
+"🔵 DBSCAN",
+"🌳 Agglomerative Clustering",
+"🕸️ Spectral Clustering",
+"⚖️ Method Comparison"
+]
 )
 
 
