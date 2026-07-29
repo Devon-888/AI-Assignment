@@ -35,35 +35,58 @@ st.set_page_config(
 def load_data(file):
     return pd.read_csv(file)
 
-
-
 st.sidebar.title("🛍️ Customer Segmentation")
-
 st.sidebar.markdown(
     "Clustering analysis based on Mall Customers dataset"
 )
 
-
-
 uploaded_file = st.sidebar.file_uploader(
-    "Upload CSV file (optional, default dataset will be used)",
+    "Upload CSV file (Optional)",
     type=["csv"]
 )
-
-
 
 default_path = os.path.join(
     os.path.dirname(__file__),
     "Mall_Customers.csv"
 )
 
+try:
 
+    if uploaded_file is not None:
 
-if uploaded_file is not None:
-    df = load_data(uploaded_file)
+        df = load_data(uploaded_file)
 
-else:
-    df = load_data(default_path)
+        st.sidebar.success("Custom dataset loaded successfully.")
+
+    elif os.path.exists(default_path):
+
+        df = load_data(default_path)
+
+        st.sidebar.info("Using default Mall_Customers.csv")
+
+    else:
+
+        st.error("Default dataset not found.")
+
+        st.stop()
+
+except Exception as e:
+
+    st.error(f"Unable to load dataset.\n\n{e}")
+
+    st.stop()
+
+if df.empty:
+
+    st.error("Dataset is empty.")
+
+    st.stop()
+
+if len(df) < 5:
+
+    st.error("Dataset must contain at least 5 records.")
+
+    st.stop()
 
 
 
@@ -135,105 +158,21 @@ if len(feature_cols_selected) < 2:
 
 df_proc = df.copy()
 
-
-feature_cols = []
-
-
-
 for col in feature_cols_selected:
 
-    # Convert categorical data into numerical values
     if df_proc[col].dtype == object:
 
         encoder = LabelEncoder()
 
         df_proc[col] = encoder.fit_transform(
-            df_proc[col]
+            df_proc[col].astype(str)
         )
 
-
-    feature_cols.append(col)
-
-
-
-# Final dataset for clustering
-
-X_raw = df_proc[feature_cols]
-
-
-# Ensure all features are numeric
-
-for col in X_raw.columns:
-
-    if not pd.api.types.is_numeric_dtype(X_raw[col]):
-
-        encoder = LabelEncoder()
-
-        X_raw[col] = encoder.fit_transform(
-            X_raw[col].astype(str)
-        )
-
-
-
-# Handle missing values
+X_raw = df_proc[feature_cols_selected]
 
 X_raw = X_raw.fillna(
-    X_raw.mean()
+    X_raw.mean(numeric_only=True)
 )
-
-# Handle missing values
-
-# Convert non-numeric columns into numbers
-
-for col in X_raw.columns:
-
-    if not pd.api.types.is_numeric_dtype(X_raw[col]):
-
-        encoder = LabelEncoder()
-
-        X_raw[col] = encoder.fit_transform(
-            X_raw[col].astype(str)
-        )
-
-
-# Handle missing values
-
-X_raw = X_raw.fillna(
-    X_raw.mean()
-)
-
-
-
-with st.expander(
-    "View Preprocessed Data"
-):
-
-    st.write(
-        "Processed Data Preview:"
-    )
-
-    st.dataframe(
-        X_raw.head()
-    )
-
-
-    st.write(
-        "Data Types:"
-    )
-
-    st.write(
-        X_raw.dtypes
-    )
-
-
-    st.write(
-        "Missing Values:"
-    )
-
-    st.write(
-        X_raw.isnull().sum()
-    )
-
 
 
 # ----------------------------------------------------------------------------
@@ -253,16 +192,24 @@ X_scaled = scaler.fit_transform(
 # PCA Dimension Reduction
 # ----------------------------------------------------------------------------
 
-pca = PCA(
-    n_components=2,
-    random_state=42
-)
+try:
 
+    scaler = StandardScaler()
 
-X_pca = pca.fit_transform(
-    X_scaled
-)
+    X_scaled = scaler.fit_transform(X_raw)
 
+    pca = PCA(
+        n_components=2,
+        random_state=42
+    )
+
+    X_pca = pca.fit_transform(X_scaled)
+
+except Exception as e:
+
+    st.error(f"PCA Error:\n{e}")
+
+    st.stop()
 
 
 # ----------------------------------------------------------------------------
@@ -556,9 +503,15 @@ with tab_dbscan:
     )
 
 
-    dbscan_labels = dbscan.fit_predict(
-        X_scaled
-    )
+try:
+
+    dbscan_labels = dbscan.fit_predict(X_scaled)
+
+except Exception as e:
+
+    st.error(f"DBSCAN Error:\n{e}")
+
+    st.stop()
 
 
 
