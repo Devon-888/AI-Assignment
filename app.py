@@ -1090,29 +1090,42 @@ with tab_compare:
 
     comparison = pd.DataFrame({
 
-    "Method":[
-        "DBSCAN",
-        "Agglomerative",
-        "Spectral"
-    ],
+        "Method":[
+            "DBSCAN",
+            "Agglomerative",
+            "Spectral"
+        ],
 
-    "Silhouette Score":[
+        "Silhouette Score":[
+            dbscan_silhouette,
+            agg_silhouette,
+            spec_silhouette
+        ]
 
-        "N/A" if np.isnan(dbscan_silhouette)
-        else round(dbscan_silhouette,3),
+    })
 
-        round(agg_silhouette,3),
 
-        round(spec_silhouette,3)
-    ]
+    # Display table
+    display_comparison = comparison.copy()
 
-})
+    display_comparison["Silhouette Score"] = (
+        display_comparison["Silhouette Score"]
+        .apply(
+            lambda x:
+            "N/A" if pd.isna(x)
+            else round(x,3)
+        )
+    )
 
 
     st.dataframe(
-        comparison,
+        display_comparison,
         use_container_width=True
     )
+
+
+    # Chart only uses valid numbers
+    chart_data = comparison.dropna()
 
 
     fig, ax = plt.subplots(
@@ -1121,8 +1134,8 @@ with tab_compare:
 
 
     ax.bar(
-        comparison["Method"],
-        comparison["Silhouette Score"]
+        chart_data["Method"],
+        chart_data["Silhouette Score"]
     )
 
 
