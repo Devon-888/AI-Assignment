@@ -190,27 +190,29 @@ X_raw = X_raw.replace(
 )
 
 
-# Check missing BEFORE filling
-st.write("Missing before fill:")
-st.write(X_raw.isna().sum())
-
-
 # Fill missing values
 for col in X_raw.columns:
 
     if X_raw[col].isna().sum() > 0:
 
-        X_raw[col] = X_raw[col].fillna(
-            X_raw[col].mean()
-        )
+        mean_value = X_raw[col].mean()
+
+        # If entire column is NaN
+        if pd.isna(mean_value):
+
+            X_raw[col] = X_raw[col].fillna(0)
+
+        else:
+
+            X_raw[col] = X_raw[col].fillna(mean_value)
 
 
-# Final check
-st.write("After preprocessing:")
-st.write(X_raw.shape)
+# Final safety check
+X_raw = X_raw.fillna(0)
 
-st.dataframe(X_raw.head())
 
+st.write("Final X_raw:")
+st.write(X_raw.isna().sum())
 
 # ----------------------------------------------------------------------------
 # Feature Scaling
@@ -268,7 +270,9 @@ try:
 
 except Exception as e:
 
-    st.error(f"PCA Error:\n{e}")
+    st.error(
+        f"PCA Error:\n{e}"
+    )
 
     st.stop()
 
