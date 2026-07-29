@@ -478,12 +478,8 @@ with tab_dbscan:
     )
 
 
-
     dc1, dc2 = st.columns(2)
 
-
-
-    with tab_dbscan:
 
     min_samples = dc1.slider(
         "min_samples",
@@ -557,20 +553,24 @@ with tab_dbscan:
 
 
     dbscan = DBSCAN(
-        eps = 1.2,
-        min_samples = 4
+        eps=eps,
+        min_samples=min_samples
     )
 
 
-try:
+    try:
 
-    dbscan_labels = dbscan.fit_predict(X_scaled)
+        dbscan_labels = dbscan.fit_predict(
+            X_scaled
+        )
 
-except Exception as e:
+    except Exception as e:
 
-    st.error(f"DBSCAN Error:\n{e}")
+        st.error(
+            f"DBSCAN Error:\n{e}"
+        )
 
-    st.stop()
+        st.stop()
 
 
 
@@ -590,7 +590,6 @@ except Exception as e:
     m1, m2, m3 = st.columns(3)
 
 
-
     m1.metric(
         "Number of Clusters",
         n_clusters_db
@@ -606,7 +605,6 @@ except Exception as e:
 
 
     if n_clusters_db >= 2:
-
 
         mask = dbscan_labels != -1
 
@@ -653,7 +651,6 @@ except Exception as e:
 
     with p1:
 
-
         fig, ax = plt.subplots(
             figsize=(6, 5)
         )
@@ -698,7 +695,6 @@ except Exception as e:
 
     with p2:
 
-
         fig, ax = plt.subplots(
             figsize=(6, 5)
         )
@@ -728,7 +724,6 @@ except Exception as e:
         st.pyplot(fig)
 
         plt.close(fig)
-
 
 
 
