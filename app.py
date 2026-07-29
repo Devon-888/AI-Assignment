@@ -70,10 +70,12 @@ for col in feature_cols_selected:
 # 修改这里
 X_raw = df_proc[feature_cols]
 
+# 只保留数字
+X_raw = X_raw.select_dtypes(include=np.number)
+
 st.write(X_raw.head())
 st.write(X_raw.dtypes)
 st.write(X_raw.isnull().sum())
-
 
 scaler = StandardScaler()
 X_scaled = scaler.fit_transform(X_raw)
