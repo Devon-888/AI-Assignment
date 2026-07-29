@@ -226,15 +226,6 @@ X_scaled = scaler.fit_transform(
 )
 
 # ----------------------------------------------------------------------------
-# Feature Scaling
-# ----------------------------------------------------------------------------
-scaler = StandardScaler()
-
-
-
-
-
-# ----------------------------------------------------------------------------
 # PCA Dimension Reduction
 # ----------------------------------------------------------------------------
 
@@ -473,7 +464,8 @@ with tab_dbscan:
     st.markdown(
         """
         DBSCAN is a density-based clustering algorithm.
-        It can automatically identify clusters and detect noise points (outliers).
+        It identifies clusters based on data density
+        and can detect noise points.
         """
     )
 
@@ -485,7 +477,7 @@ with tab_dbscan:
         "min_samples",
         min_value=2,
         max_value=20,
-        value=4,
+        value=5,
         key="db_min_samples"
     )
 
@@ -500,9 +492,12 @@ with tab_dbscan:
     )
 
 
+    # -------------------------------
+    # k-distance graph
+    # -------------------------------
 
     with st.expander(
-        "View k-distance Graph (for selecting eps)"
+        "View k-distance Graph"
     ):
 
         neighbors = NearestNeighbors(
@@ -523,7 +518,7 @@ with tab_dbscan:
 
 
         fig, ax = plt.subplots(
-            figsize=(8, 3.5)
+            figsize=(8,3.5)
         )
 
 
@@ -538,12 +533,219 @@ with tab_dbscan:
 
 
         ax.set_xlabel(
-            "Points sorted by distance"
+            "Points"
         )
 
 
         ax.set_ylabel(
-            f"Distance to {min_samples}-th NN"
+            "Distance"
+        )
+
+
+        st.pyplot(fig)
+
+        plt.close(fig)
+
+
+
+    # -------------------------------
+    # DBSCAN Model
+    # -------------------------------
+
+    dbscan = DBSCAN(
+        eps=eps,
+        min_samples=min_samples
+    )
+
+
+    try:
+
+        dbscan_labels = dbscan.fit_predict(
+            X_scaled
+        )
+
+
+    except Exception as e:
+
+        st.error(
+            f"DBSCAN Error:\n{e}"
+        )
+
+        st.stop()
+
+
+
+    # Count clusters
+
+    unique_labels = set(
+        dbscan_labels
+    )
+
+
+    n_clusters_db = len(
+        unique_labels - {-1}
+    )
+
+
+    n_noise = list(
+        dbscan_labels
+    ).count(-1)
+
+
+
+    c1, c2, c3 = st.columns(3)
+
+
+    c1.metric(
+        "Number of Clusters",
+        n_clusters_db
+    )
+
+
+    c2.metric(
+        "Noise Points",
+        n_noise
+    )
+
+
+
+    # -------------------------------
+    # Evaluation
+    # -------------------------------
+
+    if n_clusters_db >= 2:
+
+
+        mask = (
+            dbscan_labels != -1
+        )
+
+
+        dbscan_silhouette = silhouette_score(
+            X_scaled[mask],
+            dbscan_labels[mask]
+        )
+
+
+        dbscan_db_score = davies_bouldin_score(
+            X_scaled[mask],
+            dbscan_labels[mask]
+        )
+
+
+        c3.metric(
+            "Silhouette Score",
+            round(
+                dbscan_silhouette,
+                3
+            )
+        )
+
+
+        st.caption(
+            f"Davies-Bouldin Index: {dbscan_db_score:.3f}"
+        )
+
+
+    else:
+
+
+        dbscan_silhouette = np.nan
+
+        dbscan_db_score = np.nan
+
+
+        c3.metric(
+            "Silhouette Score",
+            "N/A"
+        )
+
+
+        st.warning(
+            "DBSCAN found insufficient clusters. Try changing eps or min_samples."
+        )
+
+
+
+    # -------------------------------
+    # Visualization
+    # -------------------------------
+
+    p1, p2 = st.columns(2)
+
+
+
+    with p1:
+
+
+        fig, ax = plt.subplots(
+            figsize=(6,5)
+        )
+
+
+        scatter = ax.scatter(
+            df[scatter_x],
+            df[scatter_y],
+            c=dbscan_labels,
+            cmap="tab10",
+            s=45
+        )
+
+
+        ax.set_title(
+            f"DBSCAN (eps={eps}, min_samples={min_samples})"
+        )
+
+
+        ax.set_xlabel(
+            scatter_x
+        )
+
+
+        ax.set_ylabel(
+            scatter_y
+        )
+
+
+        plt.colorbar(
+            scatter,
+            ax=ax,
+            label="Cluster (-1 = Noise)"
+        )
+
+
+        st.pyplot(fig)
+
+        plt.close(fig)
+
+
+
+    with p2:
+
+
+        fig, ax = plt.subplots(
+            figsize=(6,5)
+        )
+
+
+        scatter = ax.scatter(
+            X_pca[:,0],
+            X_pca[:,1],
+            c=dbscan_labels,
+            cmap="tab10",
+            s=45
+        )
+
+
+        ax.set_title(
+            "DBSCAN PCA Projection"
+        )
+
+
+        plt.colorbar(
+            scatter,
+            ax=ax,
+            label="Cluster"
         )
 
 
