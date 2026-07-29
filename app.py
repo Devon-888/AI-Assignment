@@ -551,22 +551,18 @@ with tab_dbscan:
         plt.close(fig)
 
     dbscan = DBSCAN(
-        eps=eps,
-        min_samples=min_samples
-    )    
+    eps=eps,
+    min_samples=min_samples
+)
 
 
-    try:
+try:
 
     dbscan_labels = dbscan.fit_predict(
         X_scaled
     )
 
-    st.write("Labels:")
-    st.write(np.unique(dbscan_labels))
-
-
-    except Exception as e:
+except Exception as e:
 
     st.error(
         f"DBSCAN Error:\n{e}"
@@ -575,11 +571,16 @@ with tab_dbscan:
     st.stop()
 
 
-    n_clusters_db = len(
-        set(dbscan_labels)
-    ) - (
-        1 if -1 in dbscan_labels else 0
-    )
+# Debug (暂时放这里)
+st.write("Labels:")
+st.write(np.unique(dbscan_labels))
+
+
+n_clusters_db = len(
+    set(dbscan_labels)
+) - (
+    1 if -1 in dbscan_labels else 0
+)
 
 
     n_noise = int(
