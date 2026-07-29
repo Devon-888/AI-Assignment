@@ -550,12 +550,10 @@ with tab_dbscan:
 
         plt.close(fig)
 
-    best_eps = 1.5
-    
     dbscan = DBSCAN(
-        eps=best_eps,
-        min_samples=4
-    )
+        eps=eps,
+        min_samples=min_samples
+    )    
 
 
     try:
