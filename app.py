@@ -546,79 +546,60 @@ with tab_dbscan:
         plt.close(fig)
 
 # -------------------------------
-# Evaluation
-# -------------------------------
+    # Evaluation
+    # -------------------------------
 
-unique_labels = set(dbscan_labels)
-
-n_clusters_db = len(
-    unique_labels
-) - (
-    1 if -1 in unique_labels else 0
-)
+    if n_clusters_db >= 2:
 
 
-if n_clusters_db >= 2:
-
-    mask = (
-        dbscan_labels != -1
-    )
-
-
-    dbscan_silhouette = silhouette_score(
-        X_scaled[mask],
-        dbscan_labels[mask]
-    )
-
-
-    dbscan_db_score = davies_bouldin_score(
-        X_scaled[mask],
-        dbscan_labels[mask]
-    )
-
-
-    c1, c2 = st.columns(2)
-
-
-    c1.metric(
-        "Silhouette Score",
-        round(
-            dbscan_silhouette,
-            3
+        mask = (
+            dbscan_labels != -1
         )
-    )
 
 
-    c2.metric(
-        "Davies-Bouldin Index",
-        round(
-            dbscan_db_score,
-            3
+        dbscan_silhouette = silhouette_score(
+            X_scaled[mask],
+            dbscan_labels[mask]
         )
-    )
 
 
-else:
-
-    dbscan_silhouette = np.nan
-
-    dbscan_db_score = np.nan
-
-
-    dbscan_silhouette = np.nan
-
-    dbscan_db_score = np.nan
+        dbscan_db_score = davies_bouldin_score(
+            X_scaled[mask],
+            dbscan_labels[mask]
+        )
 
 
-    c3.metric(
-        "Silhouette Score",
-        "N/A"
-    )
+        c3.metric(
+            "Silhouette Score",
+            round(
+                dbscan_silhouette,
+                3
+            )
+        )
 
 
-    st.warning(
-        "DBSCAN found insufficient clusters. Try changing eps or min_samples."
-    )
+        st.caption(
+            f"Davies-Bouldin Index: {dbscan_db_score:.3f}"
+        )
+
+
+    else:
+
+
+        dbscan_silhouette = np.nan
+
+        dbscan_db_score = np.nan
+
+
+        c3.metric(
+            "Silhouette Score",
+            "N/A"
+        )
+
+
+        st.warning(
+            "DBSCAN found insufficient clusters. Try changing eps or min_samples."
+        )
     
 # -------------------------------
 # DBSCAN Model (Auto Parameter Search)
