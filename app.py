@@ -35,56 +35,64 @@ st.set_page_config(
 def load_data(file):
     return pd.read_csv(file)
 
+
 st.sidebar.title("🛍️ Customer Segmentation")
+
 st.sidebar.markdown(
     "Clustering analysis based on Mall Customers dataset"
 )
 
+
 uploaded_file = st.sidebar.file_uploader(
-    "Upload CSV file (Optional)",
+    "Upload CSV file",
     type=["csv"]
 )
 
-default_path = os.path.join(
-    os.path.dirname(__file__),
-    "Mall_Customers.csv"
-)
+
+# Stop until user uploads CSV
+if uploaded_file is None:
+
+    st.info(
+        "Please upload a CSV file to start clustering analysis."
+    )
+
+    st.stop()
+
 
 try:
 
-    if uploaded_file is not None:
+    df = load_data(uploaded_file)
 
-        df = load_data(uploaded_file)
+    st.sidebar.success(
+        "Dataset loaded successfully."
+    )
 
-        st.sidebar.success("Custom dataset loaded successfully.")
-
-    elif os.path.exists(default_path):
-
-        df = load_data(default_path)
-
-        st.sidebar.info("Using default Mall_Customers.csv")
-
-    else:
-
-        st.error("Default dataset not found.")
-
-        st.stop()
 
 except Exception as e:
 
-    st.error(f"Unable to load dataset.\n\n{e}")
+    st.error(
+        f"Unable to load dataset.\n\n{e}"
+    )
 
     st.stop()
+
+
 
 if df.empty:
 
-    st.error("Dataset is empty.")
+    st.error(
+        "Dataset is empty."
+    )
 
     st.stop()
 
+
+
 if len(df) < 5:
 
-    st.error("Dataset must contain at least 5 records.")
+    st.error(
+        "Dataset must contain at least 5 records."
+    )
 
     st.stop()
 
@@ -993,3 +1001,149 @@ with tab_agg:
         st.pyplot(fig)
 
         plt.close(fig)
+
+# ----------------------------------------------------------------------------
+# Spectral Clustering
+# ----------------------------------------------------------------------------
+
+with tab_spec:
+
+    st.subheader(
+        "Spectral Clustering"
+    )
+
+    n_clusters_spec = st.slider(
+        "Number of Clusters",
+        min_value=2,
+        max_value=10,
+        value=5,
+        key="spec_k"
+    )
+
+
+    spectral = SpectralClustering(
+        n_clusters=n_clusters_spec,
+        affinity="nearest_neighbors",
+        random_state=42
+    )
+
+
+    spec_labels = spectral.fit_predict(
+        X_scaled
+    )
+
+
+    spec_silhouette = silhouette_score(
+        X_scaled,
+        spec_labels
+    )
+
+
+    spec_db = davies_bouldin_score(
+        X_scaled,
+        spec_labels
+    )
+
+
+    c1, c2 = st.columns(2)
+
+
+    c1.metric(
+        "Silhouette Score",
+        f"{spec_silhouette:.3f}"
+    )
+
+
+    c2.metric(
+        "Davies-Bouldin Index",
+        f"{spec_db:.3f}"
+    )
+
+
+    fig, ax = plt.subplots(
+        figsize=(6,5)
+    )
+
+
+    scatter = ax.scatter(
+        X_pca[:,0],
+        X_pca[:,1],
+        c=spec_labels,
+        cmap="tab10",
+        s=45
+    )
+
+
+    ax.set_title(
+        "Spectral Clustering - PCA Projection"
+    )
+
+
+    plt.colorbar(
+        scatter,
+        ax=ax
+    )
+
+
+    st.pyplot(fig)
+
+    plt.close(fig)
+
+# ----------------------------------------------------------------------------
+# Method Comparison
+# ----------------------------------------------------------------------------
+
+with tab_compare:
+
+    st.subheader(
+        "Clustering Method Comparison"
+    )
+
+
+    comparison = pd.DataFrame({
+
+        "Method":[
+            "DBSCAN",
+            "Agglomerative",
+            "Spectral"
+        ],
+
+        "Silhouette Score":[
+            dbscan_silhouette,
+            agg_silhouette,
+            spec_silhouette
+        ]
+
+    })
+
+
+    st.dataframe(
+        comparison,
+        use_container_width=True
+    )
+
+
+    fig, ax = plt.subplots(
+        figsize=(7,4)
+    )
+
+
+    ax.bar(
+        comparison["Method"],
+        comparison["Silhouette Score"]
+    )
+
+
+    ax.set_ylabel(
+        "Silhouette Score"
+    )
+
+
+    ax.set_title(
+        "Clustering Performance Comparison"
+    )
+
+
+    st.pyplot(fig)
+
+    plt.close(fig)
