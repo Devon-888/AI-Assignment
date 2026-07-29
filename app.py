@@ -550,23 +550,6 @@ with tab_dbscan:
 
         plt.close(fig)
 
-best_eps = None
-best_clusters = 0
-
-for e in np.arange(0.5, 3.0, 0.1):
-
-    temp = DBSCAN(
-        eps=e,
-        min_samples=4
-    )
-
-    labels = temp.fit_predict(X_scaled)
-
-    clusters = len(set(labels)) - (1 if -1 in labels else 0)
-
-    if clusters > best_clusters:
-        best_clusters = clusters
-        best_eps = e
 
     dbscan = DBSCAN(
         eps=eps,
