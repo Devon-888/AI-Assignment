@@ -564,9 +564,9 @@ with tab_dbscan:
 
     except Exception as e:
 
-    st.error(
-        f"DBSCAN Error:\n{e}"
-    )
+        st.error(
+            f"DBSCAN Error:\n{e}"
+        )
 
     st.stop()
 
