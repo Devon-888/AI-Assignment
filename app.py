@@ -1090,19 +1090,23 @@ with tab_compare:
 
     comparison = pd.DataFrame({
 
-        "Method":[
-            "DBSCAN",
-            "Agglomerative",
-            "Spectral"
-        ],
+    "Method":[
+        "DBSCAN",
+        "Agglomerative",
+        "Spectral"
+    ],
 
-        "Silhouette Score":[
-            dbscan_silhouette,
-            agg_silhouette,
-            spec_silhouette
-        ]
+    "Silhouette Score":[
 
-    })
+        "N/A" if np.isnan(dbscan_silhouette)
+        else round(dbscan_silhouette,3),
+
+        round(agg_silhouette,3),
+
+        round(spec_silhouette,3)
+    ]
+
+})
 
 
     st.dataframe(
