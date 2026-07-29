@@ -755,9 +755,11 @@ with tab_dbscan:
 
 
 
-    # -------------------------------
-    # DBSCAN Model
-    # -------------------------------
+# -------------------------------
+# DBSCAN Model (Auto Parameter Search)
+# -------------------------------
+
+try:
 
     best_eps = None
     best_clusters = 0
@@ -784,6 +786,7 @@ with tab_dbscan:
         )
 
 
+        # 找最多 cluster 的 eps
         if clusters > best_clusters:
 
             best_clusters = clusters
@@ -792,209 +795,121 @@ with tab_dbscan:
 
 
 
-    if best_eps is None:
+    if best_eps is None or best_clusters < 2:
 
-        st.error(
-            "DBSCAN cannot find suitable parameters."
+        st.warning(
+            "DBSCAN cannot find meaningful clusters. Try changing min_samples."
         )
 
-        st.stop()
-
-
-
-    st.info(
-        f"Best DBSCAN eps: {best_eps:.2f}, "
-        f"Clusters found: {best_clusters}"
-    )
-
-
-    dbscan_labels = best_labels
-
-
-    except Exception as e:
-
-        st.error(
-            f"DBSCAN Error:\n{e}"
+        dbscan_labels = DBSCAN(
+            eps=eps,
+            min_samples=min_samples
+        ).fit_predict(
+            X_scaled
         )
-
-        st.stop()
-
-
-
-    # Debug (测试完成后可以删除)
-    st.write(
-        "Labels:"
-    )
-
-    st.write(
-        np.unique(dbscan_labels)
-    )
-
-
-
-    n_clusters_db = len(
-        set(dbscan_labels)
-    ) - (
-        1 if -1 in dbscan_labels else 0
-    )
-
-
-    n_noise = int(
-        list(dbscan_labels).count(-1)
-    )
-
-
-
-    m1, m2, m3 = st.columns(3)
-
-
-
-    m1.metric(
-        "Number of Clusters",
-        n_clusters_db
-    )
-
-
-    m2.metric(
-        "Noise Points",
-        n_noise,
-        f"{n_noise / len(dbscan_labels):.1%}"
-    )
-
-
-
-    if n_clusters_db >= 2:
-
-
-        mask = dbscan_labels != -1
-
-
-        dbscan_silhouette = silhouette_score(
-            X_scaled[mask],
-            dbscan_labels[mask]
-        )
-
-
-        dbscan_db_score = davies_bouldin_score(
-            X_scaled[mask],
-            dbscan_labels[mask]
-        )
-
-
-        m3.metric(
-            "Silhouette Score",
-            f"{dbscan_silhouette:.3f}"
-        )
-
-
-        st.caption(
-            f"Davies-Bouldin Index: {dbscan_db_score:.3f}"
-        )
-
 
 
     else:
 
-
-        dbscan_silhouette = 0
-
-        dbscan_db_score = np.nan
-
-
-        st.warning(
-            "DBSCAN found only one cluster. Adjust eps or min_samples."
+        st.info(
+            f"Best DBSCAN eps: {best_eps:.2f}, "
+            f"Clusters found: {best_clusters}"
         )
 
 
-
-    # -------------------------------
-    # Visualization
-    # -------------------------------
-
-
-    p1, p2 = st.columns(2)
+        dbscan_labels = best_labels
 
 
 
-    with p1:
+except Exception as e:
 
+    st.error(
+        f"DBSCAN Error:\n{e}"
+    )
 
-        fig, ax = plt.subplots(
-            figsize=(6,5)
-        )
-
-
-        sc = ax.scatter(
-            df[scatter_x],
-            df[scatter_y],
-            c=dbscan_labels,
-            cmap="tab10",
-            s=45
-        )
-
-
-        ax.set_title(
-            f"DBSCAN (eps={eps}, min_samples={min_samples})"
-        )
-
-
-        ax.set_xlabel(
-            scatter_x
-        )
-
-
-        ax.set_ylabel(
-            scatter_y
-        )
-
-
-        plt.colorbar(
-            sc,
-            ax=ax,
-            label="Cluster (-1 = Noise)"
-        )
-
-
-        st.pyplot(fig)
-
-        plt.close(fig)
+    st.stop()
 
 
 
+# -------------------------------
+# Calculate Metrics
+# -------------------------------
 
-    with p2:
-
-
-        fig, ax = plt.subplots(
-            figsize=(6,5)
-        )
-
-
-        sc = ax.scatter(
-            X_pca[:,0],
-            X_pca[:,1],
-            c=dbscan_labels,
-            cmap="tab10",
-            s=45
-        )
+n_clusters_db = len(
+    set(dbscan_labels)
+) - (
+    1 if -1 in dbscan_labels else 0
+)
 
 
-        ax.set_title(
-            "DBSCAN - PCA Projection"
-        )
+n_noise = list(
+    dbscan_labels
+).count(-1)
 
 
-        plt.colorbar(
-            sc,
-            ax=ax,
-            label="Cluster"
-        )
+
+m1, m2, m3 = st.columns(3)
 
 
-        st.pyplot(fig)
+m1.metric(
+    "Number of Clusters",
+    n_clusters_db
+)
 
-        plt.close(fig)
 
+m2.metric(
+    "Noise Points",
+    n_noise
+)
+
+
+
+if n_clusters_db >= 2:
+
+
+    mask = dbscan_labels != -1
+
+
+    dbscan_silhouette = silhouette_score(
+        X_scaled[mask],
+        dbscan_labels[mask]
+    )
+
+
+    dbscan_db_score = davies_bouldin_score(
+        X_scaled[mask],
+        dbscan_labels[mask]
+    )
+
+
+    m3.metric(
+        "Silhouette Score",
+        f"{dbscan_silhouette:.3f}"
+    )
+
+
+    st.caption(
+        f"Davies-Bouldin Index: {dbscan_db_score:.3f}"
+    )
+
+
+else:
+
+
+    dbscan_silhouette = np.nan
+
+    dbscan_db_score = np.nan
+
+
+    m3.metric(
+        "Silhouette Score",
+        "N/A"
+    )
+
+
+    st.warning(
+        "DBSCAN found only one cluster."
+    )
 
 
 
