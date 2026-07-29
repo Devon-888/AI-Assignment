@@ -553,16 +553,16 @@ with tab_dbscan:
     dbscan = DBSCAN(
     eps=eps,
     min_samples=min_samples
-)
+    )
 
 
-try:
+    try:
 
-    dbscan_labels = dbscan.fit_predict(
+        dbscan_labels = dbscan.fit_predict(
         X_scaled
     )
 
-except Exception as e:
+    except Exception as e:
 
     st.error(
         f"DBSCAN Error:\n{e}"
@@ -571,16 +571,16 @@ except Exception as e:
     st.stop()
 
 
-# Debug (暂时放这里)
-st.write("Labels:")
-st.write(np.unique(dbscan_labels))
+    # Debug (暂时放这里)
+    st.write("Labels:")
+    st.write(np.unique(dbscan_labels))
 
 
-n_clusters_db = len(
-    set(dbscan_labels)
-) - (
-    1 if -1 in dbscan_labels else 0
-)
+    n_clusters_db = len(
+        set(dbscan_labels)
+    ) - (
+        1 if -1 in dbscan_labels else 0
+    )
 
 
     n_noise = int(
