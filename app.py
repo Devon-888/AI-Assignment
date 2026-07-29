@@ -57,6 +57,7 @@ if len(feature_cols_selected) < 2:
 # ----------------------------------------------------------------------------
 df_proc = df.copy()
 feature_cols = []
+
 for col in feature_cols_selected:
     if df_proc[col].dtype == object:
         le = LabelEncoder()
@@ -65,10 +66,15 @@ for col in feature_cols_selected:
     else:
         feature_cols.append(col)
 
+
+# 修改这里
+X_raw = df_proc[feature_cols]
+
 st.write(X_raw.head())
 st.write(X_raw.dtypes)
 st.write(X_raw.isnull().sum())
-X_raw = df_proc[feature_cols].values
+
+
 scaler = StandardScaler()
 X_scaled = scaler.fit_transform(X_raw)
 
