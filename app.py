@@ -668,7 +668,7 @@ with tab_dbscan:
         )
 
 
-        c1 = st.columns(1)
+        c1 = st.columns(1)[0]
 
         c1.metric(
             "Davies-Bouldin Index",
