@@ -37,9 +37,7 @@ def load_data(file):
 
 st.sidebar.title("🛍️ Customer Segmentation")
 
-st.sidebar.markdown(
-    "Clustering analysis based on Mall Customers dataset"
-)
+
 
 
 uploaded_file = st.sidebar.file_uploader(
