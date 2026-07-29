@@ -551,8 +551,8 @@ with tab_dbscan:
         plt.close(fig)
 
     dbscan = DBSCAN(
-    eps=eps,
-    min_samples=min_samples
+        eps=eps,
+        min_samples=min_samples
     )
 
 
