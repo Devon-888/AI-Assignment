@@ -26,7 +26,6 @@ st.set_page_config(
     layout="wide"
 )
 
-
 # ----------------------------------------------------------------------------
 # Data Loading
 # ----------------------------------------------------------------------------
@@ -546,7 +545,61 @@ with tab_dbscan:
 
         plt.close(fig)
 
+# -------------------------------
+# Evaluation
+# -------------------------------
 
+    if n_clusters_db >= 2:
+
+
+        mask = (
+            dbscan_labels != -1
+        )
+
+
+        dbscan_silhouette = silhouette_score(
+            X_scaled[mask],
+            dbscan_labels[mask]
+        )
+
+
+        dbscan_db_score = davies_bouldin_score(
+            X_scaled[mask],
+            dbscan_labels[mask]
+        )
+
+
+        c3.metric(
+            "Silhouette Score",
+            round(
+                dbscan_silhouette,
+                3
+            )
+        )
+
+
+        st.caption(
+            f"Davies-Bouldin Index: {dbscan_db_score:.3f}"
+        )
+
+
+    else:
+
+
+        dbscan_silhouette = np.nan
+
+        dbscan_db_score = np.nan
+
+
+        c3.metric(
+            "Silhouette Score",
+            "N/A"
+        )
+
+
+        st.warning(
+            "DBSCAN found insufficient clusters. Try changing eps or min_samples."
+        )
 # -------------------------------
 # DBSCAN Model (Auto Parameter Search)
 # -------------------------------
