@@ -552,7 +552,7 @@ with tab_dbscan:
 
 
     dbscan = DBSCAN(
-        eps=eps,
+        eps=best_eps,
         min_samples=4
     )
 
