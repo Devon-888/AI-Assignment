@@ -221,15 +221,33 @@ st.write(X_raw.isnull().sum())
 # ----------------------------------------------------------------------------
 scaler = StandardScaler()
 
-X_scaled = scaler.fit_transform(
-    X_raw
-)
 
-st.write(X_scaled.shape)
-st.write(X_raw)
+# DEBUG
+st.write("===== DEBUG BEFORE SCALING =====")
+
+st.write("X_raw shape:")
+st.write(X_raw.shape)
+
+st.write("X_raw preview:")
+st.dataframe(X_raw.head())
+
+
+st.write("Data types:")
 st.write(X_raw.dtypes)
-st.write(np.isinf(X_raw).sum())
+
+
+st.write("NaN count:")
 st.write(X_raw.isna().sum())
+
+
+st.write("Infinite count:")
+st.write(np.isinf(X_raw).sum())
+
+
+if X_raw.empty:
+    st.error("X_raw is empty after preprocessing.")
+    st.stop()
+
 
 X_scaled = scaler.fit_transform(
     X_raw
