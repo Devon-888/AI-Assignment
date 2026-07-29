@@ -162,8 +162,6 @@ if len(feature_cols_selected) < 2:
 # -----------------------------
 # Data Preprocessing
 # -----------------------------
-st.write(df.head())
-st.write(df.dtypes)
 
 df_proc = df.copy()
 
