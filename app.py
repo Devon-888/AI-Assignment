@@ -216,11 +216,16 @@ for col in X_raw.columns:
 
 
 # Final safety check
+# Final safety check
 X_raw = X_raw.fillna(0)
 
 
-st.write("Final X_raw:")
-st.write(X_raw.isna().sum())
+# Feature Scaling
+scaler = StandardScaler()
+
+X_scaled = scaler.fit_transform(
+    X_raw
+)
 
 # ----------------------------------------------------------------------------
 # Feature Scaling
@@ -228,36 +233,36 @@ st.write(X_raw.isna().sum())
 scaler = StandardScaler()
 
 
-# DEBUG
-st.write("===== DEBUG BEFORE SCALING =====")
+# # DEBUG
+# st.write("===== DEBUG BEFORE SCALING =====")
 
-st.write("X_raw shape:")
-st.write(X_raw.shape)
+# st.write("X_raw shape:")
+# st.write(X_raw.shape)
 
-st.write("X_raw preview:")
-st.dataframe(X_raw.head())
-
-
-st.write("Data types:")
-st.write(X_raw.dtypes)
+# st.write("X_raw preview:")
+# st.dataframe(X_raw.head())
 
 
-st.write("NaN count:")
-st.write(X_raw.isna().sum())
+# st.write("Data types:")
+# st.write(X_raw.dtypes)
 
 
-st.write("Infinite count:")
-st.write(np.isinf(X_raw).sum())
+# st.write("NaN count:")
+# st.write(X_raw.isna().sum())
 
 
-if X_raw.empty:
-    st.error("X_raw is empty after preprocessing.")
-    st.stop()
+# st.write("Infinite count:")
+# st.write(np.isinf(X_raw).sum())
 
 
-X_scaled = scaler.fit_transform(
-    X_raw
-)
+# if X_raw.empty:
+#     st.error("X_raw is empty after preprocessing.")
+#     st.stop()
+
+
+# X_scaled = scaler.fit_transform(
+#     X_raw
+# )
 
 
 
