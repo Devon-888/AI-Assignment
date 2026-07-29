@@ -226,14 +226,10 @@ X_scaled = scaler.fit_transform(
 )
 
 st.write(X_scaled.shape)
-st.write("X_raw")
-st.dataframe(X_raw.head())
-
-st.write("Data Types")
+st.write(X_raw)
 st.write(X_raw.dtypes)
-
-st.write("Missing Values")
-st.write(X_raw.isnull().sum())
+st.write(np.isinf(X_raw).sum())
+st.write(X_raw.isna().sum())
 
 X_scaled = scaler.fit_transform(
     X_raw
