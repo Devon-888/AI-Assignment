@@ -557,17 +557,56 @@ with tab_dbscan:
     # DBSCAN Model
     # -------------------------------
 
-    dbscan = DBSCAN(
-        eps=eps,
-        min_samples=min_samples
+    best_eps = None
+    best_clusters = 0
+    best_labels = None
+
+
+    for test_eps in np.arange(0.2, 3.0, 0.05):
+
+        temp_model = DBSCAN(
+            eps=test_eps,
+            min_samples=min_samples
+        )
+
+
+        temp_labels = temp_model.fit_predict(
+            X_scaled
+        )
+
+
+        clusters = len(
+            set(temp_labels)
+        ) - (
+            1 if -1 in temp_labels else 0
+        )
+
+
+        if clusters > best_clusters:
+
+            best_clusters = clusters
+            best_eps = test_eps
+            best_labels = temp_labels
+
+
+
+    if best_eps is None:
+
+        st.error(
+            "DBSCAN cannot find suitable parameters."
+        )
+
+        st.stop()
+
+
+
+    st.info(
+        f"Best DBSCAN eps: {best_eps:.2f}, "
+        f"Clusters found: {best_clusters}"
     )
 
 
-    try:
-
-        dbscan_labels = dbscan.fit_predict(
-            X_scaled
-        )
+    dbscan_labels = best_labels
 
 
     except Exception as e:
