@@ -164,9 +164,17 @@ X_raw = df_proc[feature_cols]
 
 # Handle missing values
 
-X_raw = X_raw.fillna(
-    X_raw.mean()
-)
+# Handle missing values
+
+for col in X_raw.columns:
+    if X_raw[col].dtype == "object":
+        X_raw[col] = X_raw[col].fillna(
+            X_raw[col].mode()[0]
+        )
+    else:
+        X_raw[col] = X_raw[col].fillna(
+            X_raw[col].mean()
+        )
 
 
 
