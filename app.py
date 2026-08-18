@@ -1200,7 +1200,7 @@ with tab_spec:
 
     n_clusters_spec = st.slider(
         "Number of Clusters",
-        min_value=0.2,
+        min_value=2,
         max_value=10,
         value=5,
         key="spec_k"
