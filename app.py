@@ -1288,31 +1288,55 @@ with tab_compare:
 
     comparison = pd.DataFrame({
 
-        "Method":[
+        "Method": [
             "DBSCAN",
             "Agglomerative",
             "Spectral"
         ],
 
-        "Silhouette Score":[
+        "Silhouette Score": [
             dbscan_silhouette,
             agg_silhouette,
             spec_silhouette
+        ],
+
+        "Davies-Bouldin Index": [
+            dbscan_db_score,
+            agg_db,
+            spec_db
         ]
 
     })
 
 
+    # ------------------------------------------------------------
     # Display table
+    # ------------------------------------------------------------
+
     display_comparison = comparison.copy()
 
-    display_comparison["Silhouette Score"] = (
-        display_comparison["Silhouette Score"]
-        .apply(
-            lambda x:
-            "N/A" if pd.isna(x)
-            else round(x,3)
-        )
+
+    display_comparison[
+        "Silhouette Score"
+    ] = display_comparison[
+        "Silhouette Score"
+    ].apply(
+        lambda x:
+        "N/A"
+        if pd.isna(x)
+        else round(x, 3)
+    )
+
+
+    display_comparison[
+        "Davies-Bouldin Index"
+    ] = display_comparison[
+        "Davies-Bouldin Index"
+    ].apply(
+        lambda x:
+        "N/A"
+        if pd.isna(x)
+        else round(x, 3)
     )
 
 
@@ -1322,12 +1346,17 @@ with tab_compare:
     )
 
 
-    # Chart only uses valid numbers
-    chart_data = comparison.dropna()
+    # ------------------------------------------------------------
+    # Silhouette Score Chart
+    # ------------------------------------------------------------
+
+    chart_data = comparison.dropna(
+        subset=["Silhouette Score"]
+    )
 
 
     fig, ax = plt.subplots(
-        figsize=(7,4)
+        figsize=(7, 4)
     )
 
 
@@ -1343,7 +1372,7 @@ with tab_compare:
 
 
     ax.set_title(
-        "Clustering Performance Comparison"
+        "Silhouette Score Comparison"
     )
 
 
