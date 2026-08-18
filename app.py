@@ -521,49 +521,270 @@ with tab_dbscan:
         "DBSCAN Clustering"
     )
 
-
     st.markdown(
         """
         DBSCAN is a density-based clustering algorithm.
         It identifies clusters based on data density
         and can detect noise points.
+
+        The system automatically searches for suitable
+        min_samples and eps values based on clustering
+        evaluation metrics.
         """
     )
 
 
-    dc1, dc2 = st.columns(2)
+    # ------------------------------------------------------------------------
+    # Automatic DBSCAN Parameter Search
+    # ------------------------------------------------------------------------
+
+    best_score = -np.inf
+    best_eps = None
+    best_min_samples = None
+    best_labels = None
+    best_silhouette = None
+    best_db = None
+    best_clusters = None
+    best_noise = None
 
 
-    min_samples = dc1.slider(
+    # Test different min_samples values
+    min_samples_range = range(
+        3,
+        11
+    )
+
+
+    # Test different eps values
+    eps_range = np.arange(
+        0.2,
+        3.01,
+        0.05
+    )
+
+
+    for test_min_samples in min_samples_range:
+
+        for test_eps in eps_range:
+
+            temp_model = DBSCAN(
+                eps=test_eps,
+                min_samples=test_min_samples
+            )
+
+
+            temp_labels = temp_model.fit_predict(
+                X_scaled
+            )
+
+
+            # ------------------------------------------------------------
+            # Count clusters
+            # ------------------------------------------------------------
+
+            unique_labels = set(
+                temp_labels
+            )
+
+
+            n_clusters = len(
+                unique_labels
+            ) - (
+                1 if -1 in unique_labels else 0
+            )
+
+
+            # Need at least 2 clusters
+            if n_clusters < 2:
+                continue
+
+
+            # ------------------------------------------------------------
+            # Calculate noise percentage
+            # ------------------------------------------------------------
+
+            noise_count = np.sum(
+                temp_labels == -1
+            )
+
+
+            noise_percentage = (
+                noise_count /
+                len(temp_labels)
+            ) * 100
+
+
+            # Avoid solutions with excessive noise
+            if noise_percentage > 30:
+                continue
+
+
+            # ------------------------------------------------------------
+            # Remove noise for evaluation
+            # ------------------------------------------------------------
+
+            mask = (
+                temp_labels != -1
+            )
+
+
+            X_clustered = X_scaled[
+                mask
+            ]
+
+
+            labels_clustered = temp_labels[
+                mask
+            ]
+
+
+            # Need at least 2 valid clusters
+            if len(
+                np.unique(labels_clustered)
+            ) < 2:
+                continue
+
+
+            # ------------------------------------------------------------
+            # Evaluation metrics
+            # ------------------------------------------------------------
+
+            temp_silhouette = silhouette_score(
+                X_clustered,
+                labels_clustered
+            )
+
+
+            temp_db = davies_bouldin_score(
+                X_clustered,
+                labels_clustered
+            )
+
+
+            # ------------------------------------------------------------
+            # Combined score
+            #
+            # Silhouette:
+            # higher = better
+            #
+            # DBI:
+            # lower = better
+            # ------------------------------------------------------------
+
+            combined_score = (
+                temp_silhouette -
+                0.1 * temp_db
+            )
+
+
+            # ------------------------------------------------------------
+            # Save best result
+            # ------------------------------------------------------------
+
+            if combined_score > best_score:
+
+                best_score = combined_score
+
+                best_eps = test_eps
+
+                best_min_samples = (
+                    test_min_samples
+                )
+
+                best_labels = temp_labels
+
+                best_silhouette = (
+                    temp_silhouette
+                )
+
+                best_db = temp_db
+
+                best_clusters = n_clusters
+
+                best_noise = noise_count
+
+
+    # ------------------------------------------------------------------------
+    # Safety check
+    # ------------------------------------------------------------------------
+
+    if best_labels is None:
+
+        st.error(
+            "No suitable DBSCAN parameters were found."
+        )
+
+        st.stop()
+
+
+    dbscan_labels = best_labels
+
+
+    # ------------------------------------------------------------------------
+    # Display Automatically Selected Parameters
+    # ------------------------------------------------------------------------
+
+    st.success(
+        "DBSCAN parameters were automatically selected."
+    )
+
+
+    c1, c2, c3, c4 = st.columns(4)
+
+
+    c1.metric(
         "min_samples",
-        min_value=2,
-        max_value=20,
-        value=5,
-        key="db_min_samples"
+        best_min_samples
     )
 
 
-    eps = dc2.slider(
-        "eps (Neighborhood Radius)",
-        min_value=0.2,
-        max_value=5.0,
-        value=1.5,
-        step=0.05,
-        key="db_eps"
+    c2.metric(
+        "eps",
+        f"{best_eps:.2f}"
     )
 
 
-    # --------------------------------
+    c3.metric(
+        "Number of Clusters",
+        best_clusters
+    )
+
+
+    c4.metric(
+        "Noise Points",
+        best_noise
+    )
+
+
+    # ------------------------------------------------------------------------
+    # Evaluation Metrics
+    # ------------------------------------------------------------------------
+
+    m1, m2 = st.columns(2)
+
+
+    m1.metric(
+        "Silhouette Score",
+        f"{best_silhouette:.3f}"
+    )
+
+
+    m2.metric(
+        "Davies-Bouldin Index",
+        f"{best_db:.3f}"
+    )
+
+
+    # ------------------------------------------------------------------------
     # k-distance Graph
-    # --------------------------------
+    # ------------------------------------------------------------------------
 
     with st.expander(
         "View k-distance Graph"
     ):
 
-
         neighbors = NearestNeighbors(
-            n_neighbors=min_samples
+            n_neighbors=best_min_samples
         )
 
 
@@ -580,7 +801,7 @@ with tab_dbscan:
 
 
         fig, ax = plt.subplots(
-            figsize=(8,3.5)
+            figsize=(8, 3.5)
         )
 
 
@@ -589,8 +810,15 @@ with tab_dbscan:
         )
 
 
+        ax.axhline(
+            best_eps,
+            linestyle="--",
+            label=f"Selected eps = {best_eps:.2f}"
+        )
+
+
         ax.set_title(
-            f"k-distance graph (k={min_samples})"
+            f"k-distance Graph (k={best_min_samples})"
         )
 
 
@@ -604,163 +832,25 @@ with tab_dbscan:
         )
 
 
+        ax.legend()
+
+
         st.pyplot(fig)
 
         plt.close(fig)
 
 
-
-    # --------------------------------
-    # DBSCAN Auto Parameter Search
-    # --------------------------------
-
-    try:
-
-        best_eps = None
-        best_clusters = 0
-        best_labels = None
-
-
-        for test_eps in np.arange(
-            0.2,
-            3.0,
-            0.05
-        ):
-
-
-            temp_model = DBSCAN(
-                eps=test_eps,
-                min_samples=min_samples
-            )
-
-
-            temp_labels = temp_model.fit_predict(
-                X_scaled
-            )
-
-
-            clusters = len(
-                set(temp_labels)
-            ) - (
-                1 if -1 in temp_labels else 0
-            )
-
-
-            if clusters > best_clusters:
-
-                best_clusters = clusters
-                best_eps = test_eps
-                best_labels = temp_labels
-
-
-
-        if best_labels is None:
-
-
-            dbscan_labels = DBSCAN(
-                eps=eps,
-                min_samples=min_samples
-            ).fit_predict(
-                X_scaled
-            )
-
-
-        else:
-
-
-            dbscan_labels = best_labels
-
-
-            st.info(
-                f"Best DBSCAN eps: {best_eps:.2f}, "
-                f"Clusters found: {best_clusters}"
-            )
-
-
-
-    except Exception as e:
-
-
-        st.error(
-            f"DBSCAN Error:\n{e}"
-        )
-
-        st.stop()
-
-
-
-    # --------------------------------
-    # Calculate Cluster Number
-    # --------------------------------
-
-    unique_labels = set(
-        dbscan_labels
-    )
-
-
-    n_clusters_db = len(
-        unique_labels
-    ) - (
-        1 if -1 in unique_labels else 0
-    )
-
-
-
-    # --------------------------------
-    # Evaluation
-    # --------------------------------
-
-    if n_clusters_db >= 2:
-
-
-        mask = (
-            dbscan_labels != -1
-        )
-
-
-        dbscan_silhouette = silhouette_score(
-            X_scaled[mask],
-            dbscan_labels[mask]
-        )
-
-
-        dbscan_db_score = davies_bouldin_score(
-            X_scaled[mask],
-            dbscan_labels[mask]
-        )
-
-
-        c1 = st.columns(1)[0]
-
-        c1.metric(
-            "Davies-Bouldin Index",
-            round(
-                dbscan_db_score,
-                3
-            )
-        )
-
-
-    else:
-
-        dbscan_db_score = np.nan
-
-
-
-    # --------------------------------
+    # ------------------------------------------------------------------------
     # Visualization
-    # --------------------------------
-
+    # ------------------------------------------------------------------------
 
     p1, p2 = st.columns(2)
 
 
-
     with p1:
 
-
         fig, ax = plt.subplots(
-            figsize=(6,5)
+            figsize=(6, 5)
         )
 
 
@@ -800,18 +890,16 @@ with tab_dbscan:
         plt.close(fig)
 
 
-
     with p2:
 
-
         fig, ax = plt.subplots(
-            figsize=(6,5)
+            figsize=(6, 5)
         )
 
 
         sc = ax.scatter(
-            X_pca[:,0],
-            X_pca[:,1],
+            X_pca[:, 0],
+            X_pca[:, 1],
             c=dbscan_labels,
             cmap="tab10",
             s=45
@@ -820,6 +908,16 @@ with tab_dbscan:
 
         ax.set_title(
             "DBSCAN - PCA Projection"
+        )
+
+
+        ax.set_xlabel(
+            "PCA 1"
+        )
+
+
+        ax.set_ylabel(
+            "PCA 2"
         )
 
 
