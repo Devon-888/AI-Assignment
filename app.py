@@ -1286,6 +1286,25 @@ with tab_compare:
         "Clustering Method Comparison"
     )
 
+    # ------------------------------------------------------------
+    # Calculate number of clusters
+    # ------------------------------------------------------------
+
+    dbscan_n_clusters = len(
+        set(dbscan_labels) - {-1}
+    )
+
+    agg_n_clusters = len(
+        set(agg_labels)
+    )
+
+    spec_n_clusters = len(
+        set(spec_labels)
+    )
+
+    # ------------------------------------------------------------
+    # Comparison DataFrame
+    # ------------------------------------------------------------
 
     comparison = pd.DataFrame({
 
@@ -1293,6 +1312,12 @@ with tab_compare:
             "DBSCAN",
             "Agglomerative",
             "Spectral"
+        ],
+
+        "Number of Clusters": [
+            dbscan_n_clusters,
+            agg_n_clusters,
+            spec_n_clusters
         ],
 
         "Silhouette Score": [
@@ -1309,14 +1334,12 @@ with tab_compare:
 
     })
 
-
     # ------------------------------------------------------------
     # Display table
     # ------------------------------------------------------------
 
     display_comparison = comparison.copy()
 
-
     display_comparison[
         "Silhouette Score"
     ] = display_comparison[
@@ -1328,7 +1351,6 @@ with tab_compare:
         else round(x, 3)
     )
 
-
     display_comparison[
         "Davies-Bouldin Index"
     ] = display_comparison[
@@ -1339,13 +1361,11 @@ with tab_compare:
         if pd.isna(x)
         else round(x, 3)
     )
-
 
     st.dataframe(
         display_comparison,
         use_container_width=True
     )
-
 
     # ------------------------------------------------------------
     # Silhouette Score Chart
@@ -1355,27 +1375,22 @@ with tab_compare:
         subset=["Silhouette Score"]
     )
 
-
     fig, ax = plt.subplots(
         figsize=(7, 4)
     )
-
 
     ax.bar(
         chart_data["Method"],
         chart_data["Silhouette Score"]
     )
 
-
     ax.set_ylabel(
         "Silhouette Score"
     )
 
-
     ax.set_title(
         "Silhouette Score Comparison"
     )
-
 
     st.pyplot(fig)
 
