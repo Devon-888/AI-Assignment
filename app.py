@@ -718,8 +718,9 @@ with tab_dbscan:
 
 
     dbscan_labels = best_labels
-
-
+    
+    dbscan_silhouette = best_silhouette
+    dbscan_db_score = best_db
     # ------------------------------------------------------------------------
     # Display Automatically Selected Parameters
     # ------------------------------------------------------------------------
