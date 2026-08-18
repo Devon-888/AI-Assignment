@@ -9,7 +9,7 @@ import seaborn as sns
 import streamlit as st
 
 from scipy.cluster.hierarchy import dendrogram, linkage
-from sklearn.preprocessing import StandardScaler, LabelEncoder
+from sklearn.preprocessing import StandardScaler, RobustScaler, LabelEncoder
 from sklearn.decomposition import PCA
 from sklearn.cluster import DBSCAN, AgglomerativeClustering, SpectralClustering
 from sklearn.metrics import silhouette_score, davies_bouldin_score
@@ -159,25 +159,65 @@ if len(feature_cols_selected) < 2:
 # -----------------------------
 # Data Preprocessing
 # -----------------------------
+# Note: this is an unsupervised clustering task (no target column), so
+# preprocessing is fit on the full dataset — there's no train/test split
+# to worry about leakage across.
 
 df_proc = df.copy()
 
 X_raw = df_proc[feature_cols_selected].copy()
 
 
-# Convert categorical columns
-for col in X_raw.columns:
+st.sidebar.subheader("Preprocessing Options")
 
-    if X_raw[col].dtype == "object":
+scaler_choice = st.sidebar.selectbox(
+    "Feature Scaling Method",
+    options=[
+        "RobustScaler (recommended, resistant to outliers)",
+        "StandardScaler"
+    ],
+    index=0
+)
 
-        encoder = LabelEncoder()
+cap_outliers = st.sidebar.checkbox(
+    "Cap outliers using IQR method",
+    value=True,
+    help="Extreme values are clipped to the [Q1-1.5*IQR, Q3+1.5*IQR] range "
+         "instead of being left as-is or dropped."
+)
 
-        X_raw[col] = encoder.fit_transform(
-            X_raw[col].astype(str)
-        )
+HIGH_CARDINALITY_THRESHOLD = 10  # unique values above this -> label encode instead of one-hot
 
 
-# Convert numeric
+# --- Step 1: Encode categorical columns ---
+# Low-cardinality categoricals (e.g. Gender) are one-hot encoded so the model
+# doesn't infer a false ordinal relationship between categories.
+# High-cardinality categoricals fall back to label encoding to avoid an
+# explosion of dummy columns.
+cat_cols = [c for c in X_raw.columns if X_raw[c].dtype == "object"]
+
+onehot_cols, label_cols = [], []
+for col in cat_cols:
+    n_unique = X_raw[col].astype(str).nunique()
+    if n_unique <= HIGH_CARDINALITY_THRESHOLD:
+        onehot_cols.append(col)
+    else:
+        label_cols.append(col)
+
+for col in label_cols:
+    encoder = LabelEncoder()
+    X_raw[col] = encoder.fit_transform(
+        X_raw[col].astype(str)
+    )
+
+if onehot_cols:
+    X_raw = pd.get_dummies(X_raw, columns=onehot_cols, dummy_na=False)
+    # get_dummies produces boolean columns; convert to int for downstream math
+    bool_cols = X_raw.select_dtypes(include="bool").columns
+    X_raw[bool_cols] = X_raw[bool_cols].astype(int)
+
+
+# --- Step 2: Convert numeric, handle infinities ---
 for col in X_raw.columns:
 
     X_raw[col] = pd.to_numeric(
@@ -186,37 +226,61 @@ for col in X_raw.columns:
     )
 
 
-# Replace infinity
 X_raw = X_raw.replace(
     [np.inf, -np.inf],
     np.nan
 )
 
 
-# Fill missing values
+# --- Step 3: Outlier capping (IQR method) ---
+if cap_outliers:
+    for col in X_raw.columns:
+        q1 = X_raw[col].quantile(0.25)
+        q3 = X_raw[col].quantile(0.75)
+        iqr = q3 - q1
+        if pd.notna(iqr) and iqr > 0:
+            lower_bound = q1 - 1.5 * iqr
+            upper_bound = q3 + 1.5 * iqr
+            X_raw[col] = X_raw[col].clip(lower_bound, upper_bound)
+
+
+# --- Step 4: Fill missing values ---
+# Median is used instead of mean since it is more robust to outliers/skew.
 for col in X_raw.columns:
 
     if X_raw[col].isna().sum() > 0:
 
-        mean_value = X_raw[col].mean()
+        median_value = X_raw[col].median()
 
         # If entire column is NaN
-        if pd.isna(mean_value):
+        if pd.isna(median_value):
 
             X_raw[col] = X_raw[col].fillna(0)
 
         else:
 
-            X_raw[col] = X_raw[col].fillna(mean_value)
+            X_raw[col] = X_raw[col].fillna(median_value)
 
 
-# Final safety check
 # Final safety check
 X_raw = X_raw.fillna(0)
 
 
-# Feature Scaling
-scaler = StandardScaler()
+# --- Step 5: Drop zero-variance features ---
+# A column with a single unique value carries no clustering signal.
+zero_var_cols = [c for c in X_raw.columns if X_raw[c].nunique() <= 1]
+if zero_var_cols:
+    X_raw = X_raw.drop(columns=zero_var_cols)
+    st.sidebar.caption(
+        f"Dropped zero-variance feature(s): {', '.join(zero_var_cols)}"
+    )
+
+
+# --- Step 6: Feature Scaling ---
+if scaler_choice.startswith("RobustScaler"):
+    scaler = RobustScaler()
+else:
+    scaler = StandardScaler()
 
 X_scaled = scaler.fit_transform(
     X_raw
