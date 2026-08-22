@@ -309,6 +309,23 @@ X_scaled = scaler.fit_transform(
 # PCA Dimension Reduction
 # ----------------------------------------------------------------------------
 
+# PCA needs at least 2 usable features to project down to 2 dimensions.
+# This can drop below 2 if, e.g., a selected feature turned out to be
+# zero-variance and got dropped in preprocessing, or too few features
+# were selected to begin with.
+if X_scaled.shape[1] < 2:
+
+    st.error(
+        "Not enough usable features remain after preprocessing to run PCA "
+        "(need at least 2, but only "
+        f"{X_scaled.shape[1]} remain: {', '.join(X_raw.columns)}).\n\n"
+        "This can happen if one of your selected features had little to no "
+        "variation in the data and was dropped. Please select at least 2 "
+        "features with meaningful variation in the sidebar."
+    )
+
+    st.stop()
+
 try:
 
     pca = PCA(
@@ -323,7 +340,9 @@ try:
 except Exception as e:
 
     st.error(
-        f"PCA Error:\n{e}"
+        "Something went wrong while running PCA. Please try selecting "
+        "different features, or check your dataset for unusual values.\n\n"
+        f"Details: {e}"
     )
 
     st.stop()
