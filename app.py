@@ -343,19 +343,38 @@ if pca_available:
 # ----------------------------------------------------------------------------
 # Scatter Plot Selection
 # ----------------------------------------------------------------------------
+# Only numeric columns are offered here. Plotting a categorical/text column
+# (e.g. "Gender") on a scatter axis doesn't produce a meaningful chart, and
+# if that column also contains missing values, matplotlib's categorical
+# axis handling can crash outright on mixed string/NaN data.
+
+scatter_axis_cols = [
+    c for c in all_cols
+    if pd.api.types.is_numeric_dtype(df[c])
+]
+
+if len(scatter_axis_cols) < 2:
+
+    st.error(
+        "At least 2 numeric columns are needed to draw the scatter plots. "
+        "Your dataset doesn't have enough numeric columns."
+    )
+
+    st.stop()
+
 
 scatter_x_default = (
     "Annual Income (k$)"
-    if "Annual Income (k$)" in df.columns
-    else all_cols[0]
+    if "Annual Income (k$)" in scatter_axis_cols
+    else scatter_axis_cols[0]
 )
 
 
 
 scatter_y_default = (
     "Spending Score (1-100)"
-    if "Spending Score (1-100)" in df.columns
-    else all_cols[-1]
+    if "Spending Score (1-100)" in scatter_axis_cols
+    else scatter_axis_cols[-1]
 )
 
 
@@ -366,8 +385,8 @@ col1, col2 = st.sidebar.columns(2)
 
 scatter_x = col1.selectbox(
     "Scatter Plot X Axis",
-    options=all_cols,
-    index=all_cols.index(
+    options=scatter_axis_cols,
+    index=scatter_axis_cols.index(
         scatter_x_default
     )
 )
@@ -376,11 +395,22 @@ scatter_x = col1.selectbox(
 
 scatter_y = col2.selectbox(
     "Scatter Plot Y Axis",
-    options=all_cols,
-    index=all_cols.index(
+    options=scatter_axis_cols,
+    index=scatter_axis_cols.index(
         scatter_y_default
     )
 )
+
+
+# Safety net: force these two columns to numeric even if they were flagged
+# as numeric dtype but still contain stray non-numeric values (e.g. a CSV
+# with a few "N/A" strings mixed into an otherwise numeric column). Any
+# value that can't be converted becomes NaN. We deliberately do NOT drop
+# rows here — the cluster label arrays are aligned by row position, so
+# dropping rows would misalign points with their cluster colors. matplotlib
+# simply skips NaN points when scattering, so this is safe.
+scatter_x_values = pd.to_numeric(df[scatter_x], errors="coerce")
+scatter_y_values = pd.to_numeric(df[scatter_y], errors="coerce")
 
 
 
@@ -929,8 +959,8 @@ with tab_dbscan:
 
 
         sc = ax.scatter(
-            df[scatter_x],
-            df[scatter_y],
+            scatter_x_values,
+            scatter_y_values,
             c=dbscan_labels,
             cmap="tab10",
             s=45
@@ -1202,8 +1232,8 @@ with tab_agg:
 
 
         sc = ax.scatter(
-            df[scatter_x],
-            df[scatter_y],
+            scatter_x_values,
+            scatter_y_values,
             c=agg_labels,
             cmap="tab10",
             s=45
