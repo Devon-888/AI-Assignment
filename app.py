@@ -480,7 +480,7 @@ with tab_eda:
 
     c3.metric(
         "Missing Values",
-        int(df.isnull().sum().sum())
+        int(df[feature_cols_selected].isnull().sum().sum())
     )
 
 
