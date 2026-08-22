@@ -125,8 +125,7 @@ default_features = [
     c for c in [
         "Age",
         "Annual Income (k$)",
-        "Spending Score (1-100)",
-        "Gender"
+        "Spending Score (1-100)"
     ]
     if c in df.columns
 ]
@@ -811,192 +810,144 @@ with tab_dbscan:
     # Safety check
     # ------------------------------------------------------------------------
 
-    if best_labels is None:
+    # --------------------------------------------------------------------
+    # Safety check: gracefully degrade instead of stopping the whole app
+    # --------------------------------------------------------------------
 
-        st.error(
-            "No suitable DBSCAN parameters were found."
-        )
+    if best_labels is not None:
 
-        st.stop()
+        dbscan_labels = best_labels
+        dbscan_silhouette = best_silhouette
+        dbscan_db_score = best_db
 
+        # ------------------------------------------------------------------------
+        # Display Automatically Selected Parameters
+        # ------------------------------------------------------------------------
 
-    dbscan_labels = best_labels
-    
-    dbscan_silhouette = best_silhouette
-    dbscan_db_score = best_db
-    # ------------------------------------------------------------------------
-    # Display Automatically Selected Parameters
-    # ------------------------------------------------------------------------
-
-    st.success(
-        "DBSCAN parameters were automatically selected."
-    )
-
-
-    c1, c2, c3, c4 = st.columns(4)
-
-
-    c1.metric(
-        "min_samples",
-        best_min_samples
-    )
-
-
-    c2.metric(
-        "eps",
-        f"{best_eps:.2f}"
-    )
-
-
-    c3.metric(
-        "Number of Clusters",
-        best_clusters
-    )
-
-
-    c4.metric(
-        "Noise Points",
-        best_noise
-    )
-
-
-    # ------------------------------------------------------------------------
-    # Evaluation Metrics
-    # ------------------------------------------------------------------------
-
-    m1, m2 = st.columns(2)
-
-
-    m1.metric(
-        "Silhouette Score",
-        f"{best_silhouette:.3f}"
-    )
-
-
-    m2.metric(
-        "Davies-Bouldin Index",
-        f"{best_db:.3f}"
-    )
-
-
-    # ------------------------------------------------------------------------
-    # k-distance Graph
-    # ------------------------------------------------------------------------
-
-    with st.expander(
-        "View k-distance Graph"
-    ):
-
-        neighbors = NearestNeighbors(
-            n_neighbors=best_min_samples
+        st.success(
+            "DBSCAN parameters were automatically selected."
         )
 
 
-        distances, _ = neighbors.fit(
-            X_scaled
-        ).kneighbors(
-            X_scaled
+        c1, c2, c3, c4 = st.columns(4)
+
+
+        c1.metric(
+            "min_samples",
+            best_min_samples
         )
 
 
-        k_distances = np.sort(
-            distances[:, -1]
+        c2.metric(
+            "eps",
+            f"{best_eps:.2f}"
         )
 
 
-        fig, ax = plt.subplots(
-            figsize=(8, 3.5)
+        c3.metric(
+            "Number of Clusters",
+            best_clusters
         )
 
 
-        ax.plot(
-            k_distances
+        c4.metric(
+            "Noise Points",
+            best_noise
         )
 
 
-        ax.axhline(
-            best_eps,
-            linestyle="--",
-            label=f"Selected eps = {best_eps:.2f}"
+        # ------------------------------------------------------------------------
+        # Evaluation Metrics
+        # ------------------------------------------------------------------------
+
+        m1, m2 = st.columns(2)
+
+
+        m1.metric(
+            "Silhouette Score",
+            f"{best_silhouette:.3f}"
         )
 
 
-        ax.set_title(
-            f"k-distance Graph (k={best_min_samples})"
+        m2.metric(
+            "Davies-Bouldin Index",
+            f"{best_db:.3f}"
         )
 
 
-        ax.set_xlabel(
-            "Points"
-        )
+        # ------------------------------------------------------------------------
+        # k-distance Graph
+        # ------------------------------------------------------------------------
+
+        with st.expander(
+            "View k-distance Graph"
+        ):
+
+            neighbors = NearestNeighbors(
+                n_neighbors=best_min_samples
+            )
 
 
-        ax.set_ylabel(
-            "Distance"
-        )
+            distances, _ = neighbors.fit(
+                X_scaled
+            ).kneighbors(
+                X_scaled
+            )
 
 
-        ax.legend()
+            k_distances = np.sort(
+                distances[:, -1]
+            )
 
 
-        st.pyplot(fig)
-
-        plt.close(fig)
-
-
-    # ------------------------------------------------------------------------
-    # Visualization
-    # ------------------------------------------------------------------------
-
-    p1, p2 = st.columns(2)
+            fig, ax = plt.subplots(
+                figsize=(8, 3.5)
+            )
 
 
-    with p1:
-
-        fig, ax = plt.subplots(
-            figsize=(6, 5)
-        )
+            ax.plot(
+                k_distances
+            )
 
 
-        sc = ax.scatter(
-            scatter_x_values,
-            scatter_y_values,
-            c=dbscan_labels,
-            cmap="tab10",
-            s=45
-        )
+            ax.axhline(
+                best_eps,
+                linestyle="--",
+                label=f"Selected eps = {best_eps:.2f}"
+            )
 
 
-        ax.set_title(
-            "DBSCAN Clustering"
-        )
+            ax.set_title(
+                f"k-distance Graph (k={best_min_samples})"
+            )
 
 
-        ax.set_xlabel(
-            scatter_x
-        )
+            ax.set_xlabel(
+                "Points"
+            )
 
 
-        ax.set_ylabel(
-            scatter_y
-        )
+            ax.set_ylabel(
+                "Distance"
+            )
 
 
-        plt.colorbar(
-            sc,
-            ax=ax,
-            label="Cluster (-1 = Noise)"
-        )
+            ax.legend()
 
 
-        st.pyplot(fig)
+            st.pyplot(fig)
 
-        plt.close(fig)
+            plt.close(fig)
 
 
-    with p2:
+        # ------------------------------------------------------------------------
+        # Visualization
+        # ------------------------------------------------------------------------
 
-        if pca_available:
+        p1, p2 = st.columns(2)
+
+
+        with p1:
 
             fig, ax = plt.subplots(
                 figsize=(6, 5)
@@ -1004,8 +955,8 @@ with tab_dbscan:
 
 
             sc = ax.scatter(
-                X_pca[:, 0],
-                X_pca[:, 1],
+                scatter_x_values,
+                scatter_y_values,
                 c=dbscan_labels,
                 cmap="tab10",
                 s=45
@@ -1013,24 +964,24 @@ with tab_dbscan:
 
 
             ax.set_title(
-                "DBSCAN - PCA Projection"
+                "DBSCAN Clustering"
             )
 
 
             ax.set_xlabel(
-                "PCA 1"
+                scatter_x
             )
 
 
             ax.set_ylabel(
-                "PCA 2"
+                scatter_y
             )
 
 
             plt.colorbar(
                 sc,
                 ax=ax,
-                label="Cluster"
+                label="Cluster (-1 = Noise)"
             )
 
 
@@ -1038,12 +989,71 @@ with tab_dbscan:
 
             plt.close(fig)
 
-        else:
 
-            st.info(
-                "PCA plot skipped: fewer than 2 usable features remained "
-                "after preprocessing."
-            )
+        with p2:
+
+            if pca_available:
+
+                fig, ax = plt.subplots(
+                    figsize=(6, 5)
+                )
+
+
+                sc = ax.scatter(
+                    X_pca[:, 0],
+                    X_pca[:, 1],
+                    c=dbscan_labels,
+                    cmap="tab10",
+                    s=45
+                )
+
+
+                ax.set_title(
+                    "DBSCAN - PCA Projection"
+                )
+
+
+                ax.set_xlabel(
+                    "PCA 1"
+                )
+
+
+                ax.set_ylabel(
+                    "PCA 2"
+                )
+
+
+                plt.colorbar(
+                    sc,
+                    ax=ax,
+                    label="Cluster"
+                )
+
+
+                st.pyplot(fig)
+
+                plt.close(fig)
+
+            else:
+
+                st.info(
+                    "PCA plot skipped: fewer than 2 usable features remained "
+                    "after preprocessing."
+                )
+
+    else:
+
+        dbscan_labels = None
+
+        st.warning(
+            "DBSCAN could not find a suitable clustering for the current "
+            "feature selection (it needs at least 2 clusters without "
+            "excessive noise). This can happen with a small dataset or "
+            "features that don't separate into dense groups. Try selecting "
+            "different features, or check the Agglomerative / Spectral tabs, "
+            "which don't rely on density and will still work."
+        )
+
 
 # ----------------------------------------------------------------------------
 # Agglomerative Clustering
@@ -1418,9 +1428,14 @@ with tab_compare:
     # ------------------------------------------------------------
     # Calculate number of clusters
     # ------------------------------------------------------------
+    # dbscan_labels can be None if DBSCAN couldn't find a suitable
+    # clustering for the current feature/data combination (see the
+    # DBSCAN tab). Handle that case instead of erroring out here.
 
-    dbscan_n_clusters = len(
-        set(dbscan_labels) - {-1}
+    dbscan_n_clusters = (
+        len(set(dbscan_labels) - {-1})
+        if dbscan_labels is not None
+        else 0
     )
 
     agg_n_clusters = len(
