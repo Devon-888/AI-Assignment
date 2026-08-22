@@ -311,41 +311,34 @@ X_scaled = scaler.fit_transform(
 
 # PCA needs at least 2 usable features to project down to 2 dimensions.
 # This can drop below 2 if, e.g., a selected feature turned out to be
-# zero-variance and got dropped in preprocessing, or too few features
-# were selected to begin with.
-if X_scaled.shape[1] < 2:
+# zero-variance after outlier capping and got dropped in preprocessing.
+# Rather than stopping the whole app (which would also hide the EDA /
+# missing-value tab below), we just skip the PCA plots specifically and
+# let everything else keep working.
+pca_available = X_scaled.shape[1] >= 2
+X_pca = None
 
-    st.error(
-        "Not enough usable features remain after preprocessing to run PCA "
-        "(need at least 2, but only "
-        f"{X_scaled.shape[1]} remain: {', '.join(X_raw.columns)}).\n\n"
-        "This can happen if one of your selected features had little to no "
-        "variation in the data and was dropped. Please select at least 2 "
-        "features with meaningful variation in the sidebar."
-    )
+if pca_available:
 
-    st.stop()
+    try:
 
-try:
+        pca = PCA(
+            n_components=2,
+            random_state=42
+        )
 
-    pca = PCA(
-        n_components=2,
-        random_state=42
-    )
+        X_pca = pca.fit_transform(
+            X_scaled
+        )
 
-    X_pca = pca.fit_transform(
-        X_scaled
-    )
+    except Exception as e:
 
-except Exception as e:
+        pca_available = False
 
-    st.error(
-        "Something went wrong while running PCA. Please try selecting "
-        "different features, or check your dataset for unusual values.\n\n"
-        f"Details: {e}"
-    )
-
-    st.stop()
+        st.warning(
+            "Something went wrong while running PCA, so PCA plots will be "
+            f"skipped for this run.\n\nDetails: {e}"
+        )
 
 # ----------------------------------------------------------------------------
 # Scatter Plot Selection
@@ -470,8 +463,8 @@ with tab_eda:
     if len(missing_before) > 0:
 
         st.write(
-            f"The following selected features had missing values, filled "
-            f"using **{'Mean' if use_mean else 'Median'}** "
+            f"**{len(missing_before)}** selected feature(s) had missing "
+            f"values, filled using **{'Mean' if use_mean else 'Median'}** "
             f"(after outlier capping):"
         )
 
@@ -493,6 +486,14 @@ with tab_eda:
 
         st.write(
             "No missing values found in the selected features."
+        )
+
+    if zero_var_cols:
+
+        st.write(
+            f"**{len(zero_var_cols)}** feature(s) were dropped for having "
+            "zero variance (all rows ended up with the same value after "
+            f"preprocessing): {', '.join(zero_var_cols)}"
         )
 
 
@@ -965,45 +966,54 @@ with tab_dbscan:
 
     with p2:
 
-        fig, ax = plt.subplots(
-            figsize=(6, 5)
-        )
+        if pca_available:
+
+            fig, ax = plt.subplots(
+                figsize=(6, 5)
+            )
 
 
-        sc = ax.scatter(
-            X_pca[:, 0],
-            X_pca[:, 1],
-            c=dbscan_labels,
-            cmap="tab10",
-            s=45
-        )
+            sc = ax.scatter(
+                X_pca[:, 0],
+                X_pca[:, 1],
+                c=dbscan_labels,
+                cmap="tab10",
+                s=45
+            )
 
 
-        ax.set_title(
-            "DBSCAN - PCA Projection"
-        )
+            ax.set_title(
+                "DBSCAN - PCA Projection"
+            )
 
 
-        ax.set_xlabel(
-            "PCA 1"
-        )
+            ax.set_xlabel(
+                "PCA 1"
+            )
 
 
-        ax.set_ylabel(
-            "PCA 2"
-        )
+            ax.set_ylabel(
+                "PCA 2"
+            )
 
 
-        plt.colorbar(
-            sc,
-            ax=ax,
-            label="Cluster"
-        )
+            plt.colorbar(
+                sc,
+                ax=ax,
+                label="Cluster"
+            )
 
 
-        st.pyplot(fig)
+            st.pyplot(fig)
 
-        plt.close(fig)
+            plt.close(fig)
+
+        else:
+
+            st.info(
+                "PCA plot skipped: fewer than 2 usable features remained "
+                "after preprocessing."
+            )
 
 # ----------------------------------------------------------------------------
 # Agglomerative Clustering
@@ -1230,36 +1240,44 @@ with tab_agg:
 
     with p2:
 
+        if pca_available:
 
-        fig, ax = plt.subplots(
-            figsize=(6, 5)
-        )
-
-
-        sc = ax.scatter(
-            X_pca[:, 0],
-            X_pca[:, 1],
-            c=agg_labels,
-            cmap="tab10",
-            s=45
-        )
+            fig, ax = plt.subplots(
+                figsize=(6, 5)
+            )
 
 
-        ax.set_title(
-            "Agglomerative Clustering - PCA Projection"
-        )
+            sc = ax.scatter(
+                X_pca[:, 0],
+                X_pca[:, 1],
+                c=agg_labels,
+                cmap="tab10",
+                s=45
+            )
 
 
-        plt.colorbar(
-            sc,
-            ax=ax,
-            label="Cluster"
-        )
+            ax.set_title(
+                "Agglomerative Clustering - PCA Projection"
+            )
 
 
-        st.pyplot(fig)
+            plt.colorbar(
+                sc,
+                ax=ax,
+                label="Cluster"
+            )
 
-        plt.close(fig)
+
+            st.pyplot(fig)
+
+            plt.close(fig)
+
+        else:
+
+            st.info(
+                "PCA plot skipped: fewer than 2 usable features remained "
+                "after preprocessing."
+            )
 
 # ----------------------------------------------------------------------------
 # Spectral Clustering
@@ -1319,34 +1337,43 @@ with tab_spec:
     )
 
 
-    fig, ax = plt.subplots(
-        figsize=(6,5)
-    )
+    if pca_available:
+
+        fig, ax = plt.subplots(
+            figsize=(6,5)
+        )
 
 
-    scatter = ax.scatter(
-        X_pca[:,0],
-        X_pca[:,1],
-        c=spec_labels,
-        cmap="tab10",
-        s=45
-    )
+        scatter = ax.scatter(
+            X_pca[:,0],
+            X_pca[:,1],
+            c=spec_labels,
+            cmap="tab10",
+            s=45
+        )
 
 
-    ax.set_title(
-        "Spectral Clustering - PCA Projection"
-    )
+        ax.set_title(
+            "Spectral Clustering - PCA Projection"
+        )
 
 
-    plt.colorbar(
-        scatter,
-        ax=ax
-    )
+        plt.colorbar(
+            scatter,
+            ax=ax
+        )
 
 
-    st.pyplot(fig)
+        st.pyplot(fig)
 
-    plt.close(fig)
+        plt.close(fig)
+
+    else:
+
+        st.info(
+            "PCA plot skipped: fewer than 2 usable features remained "
+            "after preprocessing."
+        )
 
 # ----------------------------------------------------------------------------
 # Method Comparison
