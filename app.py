@@ -9,7 +9,7 @@ import seaborn as sns
 import streamlit as st
 
 from scipy.cluster.hierarchy import dendrogram, linkage
-from sklearn.preprocessing import StandardScaler, RobustScaler, LabelEncoder
+from sklearn.preprocessing import RobustScaler, LabelEncoder
 from sklearn.decomposition import PCA
 from sklearn.cluster import DBSCAN, AgglomerativeClustering, SpectralClustering
 from sklearn.metrics import silhouette_score, davies_bouldin_score
@@ -168,23 +168,30 @@ df_proc = df.copy()
 X_raw = df_proc[feature_cols_selected].copy()
 
 
-st.sidebar.subheader("Preprocessing Options")
+# ------------------------------------------------------------------------
+# Missing Value Handling
+# ------------------------------------------------------------------------
+# Scaling method (RobustScaler) and outlier capping (IQR) are fixed choices
+# rather than user-adjustable options, since they are the recommended
+# defaults for this kind of data (income / spending scores are prone to
+# outliers). The only thing left adjustable is how missing values are
+# imputed, since that's a meaningful methodological choice worth showing.
 
-scaler_choice = st.sidebar.selectbox(
-    "Feature Scaling Method",
+st.sidebar.subheader("Missing Value Handling")
+
+impute_choice = st.sidebar.selectbox(
+    "Method for filling missing values",
     options=[
-        "RobustScaler (recommended, resistant to outliers)",
-        "StandardScaler"
+        "Median (recommended, resistant to outliers)",
+        "Mean"
     ],
-    index=0
+    index=0,
+    help="Median is less affected by extreme values (e.g. a very high "
+         "income outlier), so it's the safer default. Mean is provided "
+         "as an alternative for comparison."
 )
 
-cap_outliers = st.sidebar.checkbox(
-    "Cap outliers using IQR method",
-    value=True,
-    help="Extreme values are clipped to the [Q1-1.5*IQR, Q3+1.5*IQR] range "
-         "instead of being left as-is or dropped."
-)
+use_mean = impute_choice.startswith("Mean")
 
 HIGH_CARDINALITY_THRESHOLD = 10  # unique values above this -> label encode instead of one-hot
 
@@ -232,41 +239,48 @@ X_raw = X_raw.replace(
 )
 
 
-# --- Step 3: Outlier capping (IQR method) ---
-if cap_outliers:
-    for col in X_raw.columns:
-        q1 = X_raw[col].quantile(0.25)
-        q3 = X_raw[col].quantile(0.75)
-        iqr = q3 - q1
-        if pd.notna(iqr) and iqr > 0:
-            lower_bound = q1 - 1.5 * iqr
-            upper_bound = q3 + 1.5 * iqr
-            X_raw[col] = X_raw[col].clip(lower_bound, upper_bound)
+# --- Step 3: Missing value count (before filling), for transparency in EDA ---
+missing_before = X_raw.isna().sum()
+missing_before = missing_before[missing_before > 0]
 
 
-# --- Step 4: Fill missing values ---
-# Median is used instead of mean since it is more robust to outliers/skew.
+# --- Step 4: Outlier capping (IQR method, always applied) ---
+for col in X_raw.columns:
+    q1 = X_raw[col].quantile(0.25)
+    q3 = X_raw[col].quantile(0.75)
+    iqr = q3 - q1
+    if pd.notna(iqr) and iqr > 0:
+        lower_bound = q1 - 1.5 * iqr
+        upper_bound = q3 + 1.5 * iqr
+        X_raw[col] = X_raw[col].clip(lower_bound, upper_bound)
+
+
+# --- Step 5: Fill missing values (Mean or Median, per sidebar choice) ---
 for col in X_raw.columns:
 
     if X_raw[col].isna().sum() > 0:
 
-        median_value = X_raw[col].median()
+        fill_value = (
+            X_raw[col].mean()
+            if use_mean
+            else X_raw[col].median()
+        )
 
         # If entire column is NaN
-        if pd.isna(median_value):
+        if pd.isna(fill_value):
 
             X_raw[col] = X_raw[col].fillna(0)
 
         else:
 
-            X_raw[col] = X_raw[col].fillna(median_value)
+            X_raw[col] = X_raw[col].fillna(fill_value)
 
 
 # Final safety check
 X_raw = X_raw.fillna(0)
 
 
-# --- Step 5: Drop zero-variance features ---
+# --- Step 6: Drop zero-variance features ---
 # A column with a single unique value carries no clustering signal.
 zero_var_cols = [c for c in X_raw.columns if X_raw[c].nunique() <= 1]
 if zero_var_cols:
@@ -276,11 +290,8 @@ if zero_var_cols:
     )
 
 
-# --- Step 6: Feature Scaling ---
-if scaler_choice.startswith("RobustScaler"):
-    scaler = RobustScaler()
-else:
-    scaler = StandardScaler()
+# --- Step 7: Feature Scaling (RobustScaler, fixed) ---
+scaler = RobustScaler()
 
 X_scaled = scaler.fit_transform(
     X_raw
@@ -422,6 +433,43 @@ with tab_eda:
         "Missing Values",
         int(df.isnull().sum().sum())
     )
+
+
+
+    st.subheader(
+        "Missing Value Handling"
+    )
+
+    if len(missing_before) > 0:
+
+        st.write(
+            f"The following selected features had missing values, filled "
+            f"using **{'Mean' if use_mean else 'Median'}** "
+            f"(after outlier capping):"
+        )
+
+        missing_table = pd.DataFrame({
+            "Feature": missing_before.index,
+            "Missing Count": missing_before.values,
+            "Fill Value Used": [
+                round(
+                    X_raw[col].mean() if use_mean else X_raw[col].median(),
+                    2
+                )
+                for col in missing_before.index
+            ]
+        })
+
+        st.dataframe(
+            missing_table,
+            use_container_width=True
+        )
+
+    else:
+
+        st.write(
+            "No missing values found in the selected features."
+        )
 
 
 
