@@ -256,6 +256,12 @@ for col in X_raw.columns:
 
 
 # --- Step 5: Fill missing values (Mean or Median, per sidebar choice) ---
+# The fill value actually used for each column is recorded here so the EDA
+# tab can display it later, even if that column later gets dropped for
+# having zero variance (e.g. a column that was entirely missing and got
+# filled with a single constant).
+fill_values_used = {}
+
 for col in X_raw.columns:
 
     if X_raw[col].isna().sum() > 0:
@@ -269,10 +275,12 @@ for col in X_raw.columns:
         # If entire column is NaN
         if pd.isna(fill_value):
 
+            fill_values_used[col] = 0
             X_raw[col] = X_raw[col].fillna(0)
 
         else:
 
+            fill_values_used[col] = round(fill_value, 2)
             X_raw[col] = X_raw[col].fillna(fill_value)
 
 
@@ -452,10 +460,7 @@ with tab_eda:
             "Feature": missing_before.index,
             "Missing Count": missing_before.values,
             "Fill Value Used": [
-                round(
-                    X_raw[col].mean() if use_mean else X_raw[col].median(),
-                    2
-                )
+                fill_values_used.get(col, "N/A")
                 for col in missing_before.index
             ]
         })
