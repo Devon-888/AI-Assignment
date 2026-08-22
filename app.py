@@ -116,7 +116,7 @@ st.caption(
 
 all_cols = [
     c for c in df.columns
-    if c != "CustomerID"
+    if c not in ("CustomerID", "Gender")
 ]
 
 
@@ -474,7 +474,7 @@ with tab_eda:
 
     c2.metric(
         "Number of Features",
-        df.shape[1] - 1
+        len(feature_cols_selected)
     )
 
 
